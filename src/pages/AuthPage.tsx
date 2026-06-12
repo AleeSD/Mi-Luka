@@ -13,16 +13,16 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import logoEslogan from '@/assets/logo-eslogan.png'
 
-const MAX_INTENTOS = 5
+const MAX_INTENTOS     = 5
 const BLOQUEO_SEGUNDOS = 60
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
     { label: '8+ caracteres', ok: password.length >= 8 },
-    { label: 'Mayúscula', ok: /[A-Z]/.test(password) },
-    { label: 'Número', ok: /[0-9]/.test(password) },
+    { label: 'Mayúscula',     ok: /[A-Z]/.test(password) },
+    { label: 'Número',        ok: /[0-9]/.test(password) },
   ]
-  const score = checks.filter((c) => c.ok).length
+  const score  = checks.filter((c) => c.ok).length
   const colors = ['bg-red-400', 'bg-yellow-400', 'bg-green-400']
   if (!password) return null
   return (
@@ -41,6 +41,11 @@ function PasswordStrength({ password }: { password: string }) {
       </div>
     </div>
   )
+}
+
+const fieldVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' } },
 }
 
 export function AuthPage() {
@@ -76,7 +81,7 @@ export function AuthPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [bloqueadoHasta])
 
-  const loginForm = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
+  const loginForm    = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
   const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
   const watchPassword = registerForm.watch('password', '')
 
@@ -119,25 +124,49 @@ export function AuthPage() {
         className="hidden lg:flex flex-1 items-center justify-center p-12 relative overflow-hidden"
         style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}
       >
-        <div className="absolute top-20 right-20 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="relative z-10 text-center text-white space-y-6 max-w-sm">
-          <img src={logoEslogan} alt="Mi Luka" className="w-56 mx-auto object-contain" />
-          <p className="text-white/80 text-sm leading-relaxed">
+        <div className="absolute top-20 right-20 w-64 h-64 rounded-full bg-white/10 blur-3xl luka-float" />
+        <div className="absolute bottom-10 left-10 w-40 h-40 rounded-full bg-purple-300/15 blur-2xl luka-float-slow" />
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          className="relative z-10 text-center text-white space-y-6 max-w-sm"
+        >
+          {/* Logo con contenedor redondeado */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.15, duration: 0.5, type: 'spring', stiffness: 180, damping: 18 }}
+            className="flex justify-center"
+          >
+            <div className="px-6 py-4 bg-white/15 backdrop-blur-md rounded-3xl shadow-lg border border-white/20">
+              <img src={logoEslogan} alt="Mi Luka" className="w-44 object-contain" />
+            </div>
+          </motion.div>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.4 }}
+            className="text-white/80 text-sm leading-relaxed"
+          >
             Controla tus gastos, alcanza tus metas y vive tu vida al máximo. Tu futuro financiero empieza aquí.
-          </p>
-        </div>
+          </motion.p>
+        </motion.div>
       </div>
 
       {/* RIGHT panel – form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-sm space-y-6"
         >
-          {/* Logo mobile */}
-          <div className="lg:hidden text-center">
-            <img src={logoEslogan} alt="Mi Luka" className="h-16 mx-auto object-contain" />
+          {/* Logo mobile con contenedor redondeado */}
+          <div className="lg:hidden flex justify-center">
+            <div className="px-5 py-3 bg-white rounded-2xl shadow-md border border-gray-100">
+              <img src={logoEslogan} alt="Mi Luka" className="h-12 object-contain" />
+            </div>
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5">
@@ -149,8 +178,14 @@ export function AuthPage() {
 
               {/* ─── LOGIN ─── */}
               <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div className="space-y-1">
+                <motion.form
+                  onSubmit={handleLogin}
+                  className="space-y-4"
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+                >
+                  <motion.div variants={fieldVariants} className="space-y-1">
                     <Label htmlFor="login-email">Correo electrónico</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -160,9 +195,9 @@ export function AuthPage() {
                     {loginForm.formState.errors.email && (
                       <p className="text-xs text-red-500">{loginForm.formState.errors.email.message}</p>
                     )}
-                  </div>
+                  </motion.div>
 
-                  <div className="space-y-1">
+                  <motion.div variants={fieldVariants} className="space-y-1">
                     <Label htmlFor="login-password">Contraseña</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -176,30 +211,45 @@ export function AuthPage() {
                     {loginForm.formState.errors.password && (
                       <p className="text-xs text-red-500">{loginForm.formState.errors.password.message}</p>
                     )}
-                  </div>
+                  </motion.div>
 
                   {bloqueado && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm"
+                    >
                       <AlertCircle className="w-4 h-4 flex-shrink-0" />
                       <span>Cuenta bloqueada. Intenta en {countdown}s</span>
-                    </div>
+                    </motion.div>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={loginForm.formState.isSubmitting || bloqueado}
-                    className="w-full py-3 rounded-xl text-white font-medium transition-all hover:opacity-90 disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
-                  >
-                    {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
-                  </button>
-                </form>
+                  <motion.div variants={fieldVariants}>
+                    <motion.button
+                      type="submit"
+                      disabled={loginForm.formState.isSubmitting || bloqueado}
+                      whileHover={{ scale: 1.02, y: -1 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                      className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+                    >
+                      {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
+                    </motion.button>
+                  </motion.div>
+                </motion.form>
               </TabsContent>
 
               {/* ─── REGISTER ─── */}
               <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div className="space-y-1">
+                <motion.form
+                  onSubmit={handleRegister}
+                  className="space-y-4"
+                  initial="hidden"
+                  animate="show"
+                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+                >
+                  <motion.div variants={fieldVariants} className="space-y-1">
                     <Label htmlFor="reg-nombre">Nombre completo</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -209,9 +259,9 @@ export function AuthPage() {
                     {registerForm.formState.errors.nombre && (
                       <p className="text-xs text-red-500">{registerForm.formState.errors.nombre.message}</p>
                     )}
-                  </div>
+                  </motion.div>
 
-                  <div className="space-y-1">
+                  <motion.div variants={fieldVariants} className="space-y-1">
                     <Label htmlFor="reg-email">Correo electrónico</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -221,9 +271,9 @@ export function AuthPage() {
                     {registerForm.formState.errors.email && (
                       <p className="text-xs text-red-500">{registerForm.formState.errors.email.message}</p>
                     )}
-                  </div>
+                  </motion.div>
 
-                  <div className="space-y-1">
+                  <motion.div variants={fieldVariants} className="space-y-1">
                     <Label htmlFor="reg-password">Contraseña</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -238,9 +288,9 @@ export function AuthPage() {
                     {registerForm.formState.errors.password && (
                       <p className="text-xs text-red-500">{registerForm.formState.errors.password.message}</p>
                     )}
-                  </div>
+                  </motion.div>
 
-                  <div className="space-y-1">
+                  <motion.div variants={fieldVariants} className="space-y-1">
                     <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
@@ -254,29 +304,34 @@ export function AuthPage() {
                     {registerForm.formState.errors.confirmPassword && (
                       <p className="text-xs text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
                     )}
-                  </div>
+                  </motion.div>
 
-                  <div className="flex items-start gap-2">
+                  <motion.div variants={fieldVariants} className="flex items-start gap-2">
                     <input type="checkbox" id="terms" className="mt-1 rounded"
                       {...registerForm.register('terms')} />
                     <label htmlFor="terms" className="text-xs text-gray-500">
                       Acepto los <span className="text-[#4F46E5] cursor-pointer">términos y condiciones</span> y la{' '}
                       <span className="text-[#4F46E5] cursor-pointer">política de privacidad</span>
                     </label>
-                  </div>
+                  </motion.div>
                   {registerForm.formState.errors.terms && (
                     <p className="text-xs text-red-500">{registerForm.formState.errors.terms.message}</p>
                   )}
 
-                  <button
-                    type="submit"
-                    disabled={registerForm.formState.isSubmitting}
-                    className="w-full py-3 rounded-xl text-white font-medium transition-all hover:opacity-90 disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
-                  >
-                    {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
-                  </button>
-                </form>
+                  <motion.div variants={fieldVariants}>
+                    <motion.button
+                      type="submit"
+                      disabled={registerForm.formState.isSubmitting}
+                      whileHover={{ scale: 1.02, y: -1 }}
+                      whileTap={{ scale: 0.97 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                      className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                      style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+                    >
+                      {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
+                    </motion.button>
+                  </motion.div>
+                </motion.form>
               </TabsContent>
             </Tabs>
           </div>

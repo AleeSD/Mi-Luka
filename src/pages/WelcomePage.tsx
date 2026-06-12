@@ -5,6 +5,19 @@ import { Wallet, TrendingUp, Target, Sparkles } from 'lucide-react'
 import { useAuthContext } from '@/context/AuthContext'
 import logoEslogan from '@/assets/logo-eslogan.png'
 
+const features = [
+  { icon: Wallet,     text: 'Controla todos tus gastos' },
+  { icon: Target,     text: 'Alcanza tus metas de ahorro' },
+  { icon: TrendingUp, text: 'Analiza tus finanzas' },
+  { icon: Sparkles,   text: 'Gana puntos y beneficios' },
+]
+
+const stats = [
+  { value: '10K+', label: 'Usuarios' },
+  { value: 'S/2M+', label: 'Ahorrado' },
+  { value: '4.9★', label: 'Valoración' },
+]
+
 export function WelcomePage() {
   const navigate = useNavigate()
   const { user, loading } = useAuthContext()
@@ -28,39 +41,47 @@ export function WelcomePage() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="w-full max-w-sm text-center text-white space-y-8"
         >
-          {/* Logo con eslogan */}
+          {/* Logo */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
+            initial={{ opacity: 0, scale: 0.72 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
+            transition={{ delay: 0.1, duration: 0.55, type: 'spring', stiffness: 180, damping: 18 }}
             className="flex justify-center"
           >
-            <img
-              src={logoEslogan}
-              alt="Mi Luka - Tu dinero bajo control"
-              className="w-56 lg:w-64 object-contain drop-shadow-xl"
-            />
+            <div className="px-6 py-4 bg-white/15 backdrop-blur-md rounded-3xl shadow-xl border border-white/20">
+              <img
+                src={logoEslogan}
+                alt="Mi Luka - Tu dinero bajo control"
+                className="w-44 lg:w-52 object-contain"
+              />
+            </div>
           </motion.div>
 
-          {/* Features */}
+          {/* Features — stagger individual */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 0.5 }}
             className="space-y-4 py-4"
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1, delayChildren: 0.42 } } }}
           >
-            {[
-              { icon: Wallet,    text: 'Controla todos tus gastos' },
-              { icon: Target,    text: 'Alcanza tus metas de ahorro' },
-              { icon: TrendingUp, text: 'Analiza tus finanzas' },
-              { icon: Sparkles,  text: 'Gana puntos y beneficios' },
-            ].map(({ icon: Icon, text }) => (
-              <div key={text} className="flex items-center gap-3 text-white/90">
-                <div className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+            {features.map(({ icon: Icon, text }) => (
+              <motion.div
+                key={text}
+                variants={{
+                  hidden: { opacity: 0, x: -22 },
+                  show:  { opacity: 1, x: 0, transition: { duration: 0.4, ease: 'easeOut' } },
+                }}
+                className="flex items-center gap-3 text-white/90"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.2, rotate: 8 }}
+                  transition={{ type: 'spring', stiffness: 420, damping: 10 }}
+                  className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0"
+                >
                   <Icon className="w-4 h-4" />
-                </div>
+                </motion.div>
                 <span className="text-sm">{text}</span>
-              </div>
+              </motion.div>
             ))}
           </motion.div>
 
@@ -68,21 +89,27 @@ export function WelcomePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.4 }}
+            transition={{ delay: 0.9, duration: 0.4 }}
             className="space-y-3"
           >
-            <button
+            <motion.button
               onClick={() => navigate('/auth?tab=register')}
-              className="w-full py-4 text-base font-semibold rounded-2xl bg-white text-[#667eea] hover:bg-white/95 shadow-xl transition-all hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98]"
+              whileHover={{ scale: 1.03, y: -2, boxShadow: '0 20px 40px rgba(0,0,0,0.28)' }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              className="w-full py-4 text-base font-semibold rounded-2xl bg-white text-[#667eea] shadow-xl"
             >
               Comenzar gratis
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={() => navigate('/auth?tab=login')}
-              className="w-full py-4 text-sm font-medium rounded-2xl border border-white/40 text-white hover:bg-white/10 transition-all"
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              className="w-full py-4 text-sm font-medium rounded-2xl border border-white/40 text-white hover:bg-white/10 transition-colors"
             >
               Ya tengo cuenta
-            </button>
+            </motion.button>
           </motion.div>
         </motion.div>
       </div>
@@ -90,35 +117,57 @@ export function WelcomePage() {
       {/* Desktop right decorative panel */}
       <div className="hidden lg:flex flex-1 items-center justify-center p-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-white/5" />
-        <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute bottom-10 left-10 w-48 h-48 rounded-full bg-purple-300/20 blur-2xl" />
+        {/* Floating blobs */}
+        <div className="absolute top-10 right-10 w-64 h-64 rounded-full bg-white/10 blur-3xl luka-float" />
+        <div className="absolute bottom-10 left-10 w-48 h-48 rounded-full bg-purple-300/20 blur-2xl luka-float-slow" />
+        <div className="absolute top-1/2 left-1/4 w-32 h-32 rounded-full bg-indigo-300/10 blur-2xl luka-float" style={{ animationDelay: '2s' }} />
+
         <motion.div
-          initial={{ opacity: 0, x: 40 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
+          initial={{ opacity: 0, x: 40, scale: 0.9 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 text-center text-white space-y-6"
         >
-          <div className="w-32 h-32 rounded-3xl bg-white/20 backdrop-blur-lg flex items-center justify-center mx-auto shadow-2xl">
-            <Sparkles className="w-16 h-16 text-white" />
-          </div>
+          {/* Floating icon box */}
+          <motion.div
+            animate={{ y: [0, -12, 0] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+            className="w-32 h-32 rounded-3xl bg-white/20 backdrop-blur-lg flex items-center justify-center mx-auto shadow-2xl"
+          >
+            <motion.div
+              animate={{ rotate: [0, 14, -10, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+            >
+              <Sparkles className="w-16 h-16 text-white" />
+            </motion.div>
+          </motion.div>
+
           <h2 className="text-3xl font-bold">Finanzas para tu generación</h2>
           <p className="text-white/80 max-w-sm">
             Diseñada por y para jóvenes que quieren tomar el control de su dinero con una app moderna y gamificada.
           </p>
-          <div className="flex justify-center gap-6 text-white/90">
-            <div className="text-center">
-              <div className="text-2xl font-bold">10K+</div>
-              <div className="text-xs text-white/70">Usuarios</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">S/2M+</div>
-              <div className="text-xs text-white/70">Ahorrado</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">4.9★</div>
-              <div className="text-xs text-white/70">Valoración</div>
-            </div>
-          </div>
+
+          {/* Stats — stagger spring */}
+          <motion.div
+            className="flex justify-center gap-6 text-white/90"
+            initial="hidden"
+            animate="show"
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.13, delayChildren: 0.65 } } }}
+          >
+            {stats.map(({ value, label }) => (
+              <motion.div
+                key={label}
+                variants={{
+                  hidden: { opacity: 0, scale: 0.55, y: 12 },
+                  show:  { opacity: 1, scale: 1,    y: 0,  transition: { type: 'spring', stiffness: 270, damping: 14 } },
+                }}
+                className="text-center"
+              >
+                <div className="text-2xl font-bold">{value}</div>
+                <div className="text-xs text-white/70">{label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
         </motion.div>
       </div>
     </div>

@@ -14,22 +14,6 @@ export async function getExpenses(userId: string): Promise<Expense[]> {
   return data ?? []
 }
 
-export async function getExpensesByMonth(userId: string, year: number, month: number): Promise<Expense[]> {
-  const startDate = `${year}-${String(month).padStart(2, '0')}-01`
-  const endDate = new Date(year, month, 0).toISOString().split('T')[0]
-
-  const { data, error } = await supabase
-    .from('expenses')
-    .select('*')
-    .eq('user_id', userId)
-    .gte('fecha', startDate)
-    .lte('fecha', endDate)
-    .order('fecha', { ascending: false })
-
-  if (error) throw new Error('No se pudieron cargar los gastos del mes')
-  return data ?? []
-}
-
 export async function getExpenseById(id: string): Promise<Expense | null> {
   const { data, error } = await supabase
     .from('expenses')

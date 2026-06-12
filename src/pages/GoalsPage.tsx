@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Calendar, TrendingUp, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 import { Card } from '@/components/ui/card'
@@ -18,13 +19,28 @@ import type { Goal } from '@/types/database'
 
 const COLORES = ['#4F46E5', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444', '#06B6D4']
 
+const pageVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
+}
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] } },
+}
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.94, y: 10 },
+  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] } },
+}
+
 export function GoalsPage() {
   const { goalsActivas, goalsCompletadas, loading, addGoal, contribuir, removeGoal } = useGoals()
-  const [showNueva, setShowNueva] = useState(false)
+  const [showNueva, setShowNueva]           = useState(false)
   const [goalContribuir, setGoalContribuir] = useState<Goal | null>(null)
   const [showCompletadas, setShowCompletadas] = useState(false)
 
-  const goalForm = useForm<GoalFormData>({
+  const goalForm  = useForm<GoalFormData>({
     resolver: zodResolver(goalSchema),
     defaultValues: { color: '#4F46E5', icono: 'target' },
   })
@@ -61,166 +77,238 @@ export function GoalsPage() {
     }
   })
 
-  const totalActivos = goalsActivas.length
+  const totalActivos  = goalsActivas.length
   const totalAhorrado = goalsActivas.reduce((acc, g) => acc + Number(g.monto_actual), 0)
 
   return (
-    <div className="space-y-5 p-4 pt-6 pb-24">
-      <div className="flex items-center justify-between">
+    <motion.div
+      className="space-y-5 p-4 pt-6 pb-24"
+      variants={pageVariants}
+      initial="hidden"
+      animate="show"
+    >
+      {/* Header */}
+      <motion.div variants={fadeUp} className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl lg:text-3xl font-semibold" style={{ color: 'var(--luka-text-primary)' }}>Mis metas</h1>
           <p className="text-sm" style={{ color: 'var(--luka-text-secondary)' }}>Define y alcanza tus objetivos</p>
         </div>
-        <button
+        <motion.button
           onClick={() => setShowNueva(true)}
-          className="w-11 h-11 rounded-full flex items-center justify-center text-white shadow-lg hover:opacity-90 transition-all"
+          whileHover={{ scale: 1.1, rotate: 90 }}
+          whileTap={{ scale: 0.9 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+          className="w-11 h-11 rounded-full flex items-center justify-center text-white shadow-lg"
           style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
         >
           <Plus className="w-5 h-5" />
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       {/* Stats card */}
       {!loading && goalsActivas.length > 0 && (
-        <Card
-          className="p-6 rounded-2xl shadow-lg border-0 relative overflow-hidden"
-          style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
-        >
-          <div className="relative z-10">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-5 h-5 text-white" />
-              <h3 className="text-white font-medium">¡Vas muy bien!</h3>
-            </div>
-            <div className="flex gap-6 text-white">
-              <div>
-                <p className="text-2xl font-bold">{totalActivos}</p>
-                <p className="text-xs text-white/70">Metas activas</p>
+        <motion.div variants={scaleIn}>
+          <motion.div
+            whileHover={{ scale: 1.01, y: -2 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card
+              className="p-6 rounded-2xl shadow-lg border-0 relative overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+            >
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-5 h-5 text-white" />
+                  <h3 className="text-white font-medium">¡Vas muy bien!</h3>
+                </div>
+                <div className="flex gap-6 text-white">
+                  <div>
+                    <p className="text-2xl font-bold">{totalActivos}</p>
+                    <p className="text-xs text-white/70">Metas activas</p>
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{formatCurrency(totalAhorrado)}</p>
+                    <p className="text-xs text-white/70">Total ahorrado</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{formatCurrency(totalAhorrado)}</p>
-                <p className="text-xs text-white/70">Total ahorrado</p>
-              </div>
-            </div>
-          </div>
-          <div className="absolute bottom-0 right-0 text-7xl opacity-10 select-none">🎯</div>
-        </Card>
+              <motion.div
+                animate={{ rotate: [0, 8, -5, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                className="absolute bottom-0 right-0 text-7xl opacity-10 select-none"
+              >
+                🎯
+              </motion.div>
+            </Card>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Metas activas */}
       {loading ? (
-        <div className="space-y-4">
+        <motion.div variants={fadeUp} className="space-y-4">
           {[1, 2].map((i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)}
-        </div>
+        </motion.div>
       ) : goalsActivas.length === 0 ? (
-        <Card className="rounded-2xl shadow-md overflow-hidden">
-          <EmptyState
-            emoji="🎯"
-            title="Sin metas aún"
-            description="Crea tu primera meta de ahorro y empieza a trabajar hacia ella."
-            action={
-              <button
-                onClick={() => setShowNueva(true)}
-                className="px-5 py-2.5 rounded-xl text-white text-sm font-medium"
-                style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
-              >
-                Nueva meta
-              </button>
-            }
-          />
-        </Card>
+        <motion.div variants={fadeUp}>
+          <Card className="rounded-2xl shadow-md overflow-hidden">
+            <EmptyState
+              emoji="🎯"
+              title="Sin metas aún"
+              description="Crea tu primera meta de ahorro y empieza a trabajar hacia ella."
+              action={
+                <motion.button
+                  onClick={() => setShowNueva(true)}
+                  whileHover={{ scale: 1.04 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="px-5 py-2.5 rounded-xl text-white text-sm font-medium"
+                  style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+                >
+                  Nueva meta
+                </motion.button>
+              }
+            />
+          </Card>
+        </motion.div>
       ) : (
-        <div className="space-y-4">
+        <motion.div
+          className="space-y-4"
+          initial="hidden"
+          animate="show"
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1 } } }}
+        >
           {goalsActivas.map((goal) => {
-            const pct = Math.min((Number(goal.monto_actual) / Number(goal.monto_objetivo)) * 100, 100)
-            const dias = goal.fecha_limite ? getDiasRestantes(goal.fecha_limite) : null
+            const pct  = Math.min((Number(goal.monto_actual) / Number(goal.monto_objetivo)) * 100, 100)
+            const dias  = goal.fecha_limite ? getDiasRestantes(goal.fecha_limite) : null
             const faltan = Number(goal.monto_objetivo) - Number(goal.monto_actual)
 
             return (
-              <Card key={goal.id} className="p-5 rounded-2xl shadow-md">
-                <div className="flex items-start gap-3 mb-4">
-                  <div
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                    style={{ background: `${goal.color}18` }}
-                  >
-                    🎯
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate" style={{ color: 'var(--luka-text-primary)' }}>{goal.titulo}</h3>
-                    <div className="flex items-center gap-2 text-sm mt-0.5" style={{ color: 'var(--luka-text-secondary)' }}>
-                      {dias !== null && (
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          {dias > 0 ? `${dias} días` : 'Vencida'}
-                        </span>
-                      )}
-                      {dias !== null && <span>·</span>}
-                      <span>Faltan {formatCurrency(faltan)}</span>
+              <motion.div
+                key={goal.id}
+                variants={{
+                  hidden: { opacity: 0, x: 20,  y: 6 },
+                  show:   { opacity: 1, x: 0,   y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
+                }}
+                whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.1)' }}
+                transition={{ duration: 0.2 }}
+              >
+                <Card className="p-5 rounded-2xl shadow-md">
+                  <div className="flex items-start gap-3 mb-4">
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 10 }}
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                      style={{ background: `${goal.color}18` }}
+                    >
+                      🎯
+                    </motion.div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold truncate" style={{ color: 'var(--luka-text-primary)' }}>{goal.titulo}</h3>
+                      <div className="flex items-center gap-2 text-sm mt-0.5" style={{ color: 'var(--luka-text-secondary)' }}>
+                        {dias !== null && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="w-3.5 h-3.5" />
+                            {dias > 0 ? `${dias} días` : 'Vencida'}
+                          </span>
+                        )}
+                        {dias !== null && <span>·</span>}
+                        <span>Faltan {formatCurrency(faltan)}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold" style={{ color: goal.color }}>{pct.toFixed(0)}%</span>
+                      <motion.button
+                        onClick={() => removeGoal(goal.id).then(() => toast.success('Meta eliminada')).catch((e) => toast.error(e.message))}
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.85 }}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </motion.button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold" style={{ color: goal.color }}>{pct.toFixed(0)}%</span>
-                    <button
-                      onClick={() => removeGoal(goal.id).then(() => toast.success('Meta eliminada')).catch((e) => toast.error(e.message))}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
 
-                <div className="space-y-1.5 mb-4">
-                  <div className="w-full h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${goal.color}, ${goal.color}cc)` }}
-                    />
+                  <div className="space-y-1.5 mb-4">
+                    <div className="w-full h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+                        style={{ background: `linear-gradient(90deg, ${goal.color}, ${goal.color}cc)` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs" style={{ color: 'var(--luka-text-secondary)' }}>
+                      <span>{formatCurrency(Number(goal.monto_actual))}</span>
+                      <span>{formatCurrency(Number(goal.monto_objetivo))}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-xs" style={{ color: 'var(--luka-text-secondary)' }}>
-                    <span>{formatCurrency(Number(goal.monto_actual))}</span>
-                    <span>{formatCurrency(Number(goal.monto_objetivo))}</span>
-                  </div>
-                </div>
 
-                <button
-                  onClick={() => { setGoalContribuir(goal); contribForm.reset() }}
-                  className="w-full py-2.5 rounded-xl text-white text-sm font-medium transition-all hover:opacity-90"
-                  style={{ background: goal.color }}
-                >
-                  Contribuir
-                </button>
-              </Card>
+                  <motion.button
+                    onClick={() => { setGoalContribuir(goal); contribForm.reset() }}
+                    whileHover={{ scale: 1.03, opacity: 0.9 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    className="w-full py-2.5 rounded-xl text-white text-sm font-medium"
+                    style={{ background: goal.color }}
+                  >
+                    Contribuir
+                  </motion.button>
+                </Card>
+              </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
 
       {/* Metas completadas */}
       {goalsCompletadas.length > 0 && (
-        <div>
-          <button
+        <motion.div variants={fadeUp}>
+          <motion.button
             onClick={() => setShowCompletadas(!showCompletadas)}
+            whileHover={{ x: 2 }}
             className="flex items-center gap-2 text-sm font-medium mb-3"
             style={{ color: 'var(--luka-text-secondary)' }}
           >
-            {showCompletadas ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <motion.div
+              animate={{ rotate: showCompletadas ? 180 : 0 }}
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+            >
+              <ChevronDown className="w-4 h-4" />
+            </motion.div>
             Completadas ({goalsCompletadas.length})
-          </button>
-          {showCompletadas && (
-            <div className="space-y-3">
-              {goalsCompletadas.map((goal) => (
-                <Card key={goal.id} className="p-4 rounded-2xl shadow-sm border-2 border-green-200 bg-green-50 dark:bg-green-950/20">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">✅</div>
-                    <div className="flex-1">
-                      <p className="font-medium" style={{ color: 'var(--luka-text-primary)' }}>{goal.titulo}</p>
-                      <p className="text-xs text-green-600">{formatCurrency(Number(goal.monto_objetivo))} alcanzado</p>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </div>
+          </motion.button>
+          <AnimatePresence>
+            {showCompletadas && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="overflow-hidden space-y-3"
+              >
+                {goalsCompletadas.map((goal, i) => (
+                  <motion.div
+                    key={goal.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.06, duration: 0.25 }}
+                  >
+                    <Card className="p-4 rounded-2xl shadow-sm border-2 border-green-200 bg-green-50 dark:bg-green-950/20">
+                      <div className="flex items-center gap-3">
+                        <div className="text-2xl">✅</div>
+                        <div className="flex-1">
+                          <p className="font-medium" style={{ color: 'var(--luka-text-primary)' }}>{goal.titulo}</p>
+                          <p className="text-xs text-green-600">{formatCurrency(Number(goal.monto_objetivo))} alcanzado</p>
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       )}
 
       {/* Dialog nueva meta */}
@@ -244,24 +332,35 @@ export function GoalsPage() {
             <div className="space-y-1">
               <Label>Fecha límite <span className="font-normal text-xs text-gray-400">(opcional)</span></Label>
               <Input type="date" className="rounded-xl" {...goalForm.register('fecha_limite')} />
-              {goalForm.formState.errors.fecha_limite && <p className="text-xs text-red-500">{goalForm.formState.errors.fecha_limite.message}</p>}
             </div>
             <div className="space-y-1">
               <Label>Color</Label>
               <div className="flex gap-2">
                 {COLORES.map((c) => (
-                  <button key={c} type="button" onClick={() => goalForm.setValue('color', c)}
-                    className="w-8 h-8 rounded-full border-2 transition-all"
-                    style={{ background: c, borderColor: goalForm.watch('color') === c ? '#111827' : 'transparent', transform: goalForm.watch('color') === c ? 'scale(1.2)' : 'scale(1)' }}
+                  <motion.button
+                    key={c}
+                    type="button"
+                    onClick={() => goalForm.setValue('color', c)}
+                    whileHover={{ scale: 1.2 }}
+                    whileTap={{ scale: 0.9 }}
+                    animate={{ scale: goalForm.watch('color') === c ? 1.25 : 1 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15 }}
+                    className="w-8 h-8 rounded-full border-2"
+                    style={{ background: c, borderColor: goalForm.watch('color') === c ? '#111827' : 'transparent' }}
                   />
                 ))}
               </div>
             </div>
-            <button type="submit" disabled={goalForm.formState.isSubmitting}
+            <motion.button
+              type="submit"
+              disabled={goalForm.formState.isSubmitting}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
               className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}>
+              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+            >
               {goalForm.formState.isSubmitting ? 'Creando...' : 'Crear meta'}
-            </button>
+            </motion.button>
           </form>
         </DialogContent>
       </Dialog>
@@ -285,15 +384,20 @@ export function GoalsPage() {
                   {...contribForm.register('monto', { valueAsNumber: true })} />
                 {contribForm.formState.errors.monto && <p className="text-xs text-red-500">{contribForm.formState.errors.monto.message}</p>}
               </div>
-              <button type="submit" disabled={contribForm.formState.isSubmitting}
+              <motion.button
+                type="submit"
+                disabled={contribForm.formState.isSubmitting}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
                 className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
-                style={{ background: goalContribuir.color }}>
+                style={{ background: goalContribuir.color }}
+              >
                 {contribForm.formState.isSubmitting ? 'Guardando...' : 'Añadir'}
-              </button>
+              </motion.button>
             </form>
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </motion.div>
   )
 }
