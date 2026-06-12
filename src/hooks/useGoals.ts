@@ -9,22 +9,25 @@ export function useGoals() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
-  const load = useCallback(async () => {
-    if (!user) return
+  useEffect(() => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
     setLoading(true)
     setError(null)
-    try {
-      const data = await getGoals(user.id)
-      setGoals(data)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando metas')
-    } finally {
-      setLoading(false)
-    }
-  }, [user])
 
-  useEffect(() => { load() }, [load])
+    getGoals(user.id)
+      .then(data  => { if (!cancelled) setGoals(data) })
+      .catch(e    => { if (!cancelled) setError(e instanceof Error ? e.message : 'Error cargando metas') })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [user, retryCount])
 
   const addGoal = useCallback(async (data: GoalFormData): Promise<Goal> => {
     if (!user) throw new Error('No autenticado')
@@ -46,8 +49,12 @@ export function useGoals() {
     setGoals((prev) => prev.filter((g) => g.id !== goalId))
   }, [])
 
-  const goalsActivas = goals.filter((g) => !g.completada)
+  const goalsActivas    = goals.filter((g) => !g.completada)
   const goalsCompletadas = goals.filter((g) => g.completada)
 
-  return { goals, goalsActivas, goalsCompletadas, loading, error, refresh: load, addGoal, contribuir, removeGoal }
+  return {
+    goals, goalsActivas, goalsCompletadas, loading, error,
+    refresh: () => setRetryCount(n => n + 1),
+    addGoal, contribuir, removeGoal,
+  }
 }

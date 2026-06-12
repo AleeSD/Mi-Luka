@@ -172,12 +172,12 @@ export function GoalsPage() {
         </motion.div>
       ) : (
         <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
           className="space-y-4"
-          initial="hidden"
-          animate="show"
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1 } } }}
         >
-          {goalsActivas.map((goal) => {
+          {goalsActivas.map((goal, i) => {
             const pct  = Math.min((Number(goal.monto_actual) / Number(goal.monto_objetivo)) * 100, 100)
             const dias  = goal.fecha_limite ? getDiasRestantes(goal.fecha_limite) : null
             const faltan = Number(goal.monto_objetivo) - Number(goal.monto_actual)
@@ -185,12 +185,10 @@ export function GoalsPage() {
             return (
               <motion.div
                 key={goal.id}
-                variants={{
-                  hidden: { opacity: 0, x: 20,  y: 6 },
-                  show:   { opacity: 1, x: 0,   y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-                }}
+                initial={{ opacity: 0, x: 20, y: 6 }}
+                animate={{ opacity: 1, x: 0,  y: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: i * 0.07 }}
                 whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.1)' }}
-                transition={{ duration: 0.2 }}
               >
                 <Card className="p-5 rounded-2xl shadow-md">
                   <div className="flex items-start gap-3 mb-4">

@@ -268,11 +268,16 @@ export function BenefitsPage() {
           </Card>
         </motion.div>
       ) : (
-        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0"
+        >
           {benefits.map((benefit, i) => (
             <BenefitCard key={benefit.id} benefit={benefit} index={i} />
           ))}
-        </div>
+        </motion.div>
       )}
     </motion.div>
   )
