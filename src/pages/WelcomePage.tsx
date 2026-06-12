@@ -48,13 +48,11 @@ export function WelcomePage() {
             transition={{ delay: 0.1, duration: 0.55, type: 'spring', stiffness: 180, damping: 18 }}
             className="flex justify-center"
           >
-            <div className="px-6 py-4 bg-white/15 backdrop-blur-md rounded-3xl shadow-xl border border-white/20">
-              <img
-                src={logoEslogan}
-                alt="Mi Luka - Tu dinero bajo control"
-                className="w-44 lg:w-52 object-contain"
-              />
-            </div>
+            <img
+              src={logoEslogan}
+              alt="Mi Luka - Tu dinero bajo control"
+              className="w-44 lg:w-52 object-contain rounded-2xl"
+            />
           </motion.div>
 
           {/* Features — stagger individual */}

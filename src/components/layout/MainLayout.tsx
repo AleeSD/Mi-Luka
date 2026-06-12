@@ -31,9 +31,7 @@ export function MainLayout() {
           transition={{ duration: 0.4, ease: 'easeOut' }}
           className="p-6 border-b border-gray-100 dark:border-gray-800"
         >
-          <div className="inline-flex items-center bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 rounded-2xl px-3 py-2">
-            <img src={logoNormal} alt="Mi Luka" className="h-8 w-auto object-contain" />
-          </div>
+          <img src={logoNormal} alt="Mi Luka" className="h-8 w-auto object-contain rounded-xl" />
         </motion.div>
 
         <nav className="flex-1 p-4">

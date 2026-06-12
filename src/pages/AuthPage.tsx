@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { motion } from 'motion/react'
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, FileText, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthContext } from '@/context/AuthContext'
 import { loginSchema, registerSchema } from '@/lib/validations/auth'
@@ -11,6 +11,7 @@ import type { LoginFormData, RegisterFormData } from '@/lib/validations/auth'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import logoEslogan from '@/assets/logo-eslogan.png'
 
 const MAX_INTENTOS     = 5
@@ -43,6 +44,84 @@ function PasswordStrength({ password }: { password: string }) {
   )
 }
 
+function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto rounded-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <FileText className="w-5 h-5 text-[#4F46E5]" />
+            Términos y Condiciones
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-5 text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
+          <div className="p-3 bg-indigo-50 dark:bg-indigo-950/30 rounded-xl flex items-start gap-2">
+            <Shield className="w-4 h-4 text-indigo-600 flex-shrink-0 mt-0.5" />
+            <p className="text-indigo-700 dark:text-indigo-300 text-xs">
+              Al crear tu cuenta aceptas estos términos. Léelos con calma.
+            </p>
+          </div>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">1. Uso del servicio</h4>
+            <p>Mi Luka es una aplicación de gestión de finanzas personales dirigida a jóvenes. Al registrarte, confirmas que tienes al menos 16 años y que usarás el servicio de forma responsable y legal.</p>
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">2. Tu cuenta</h4>
+            <p>Eres responsable de mantener la seguridad de tu contraseña. No compartas tus credenciales. Notifícanos de inmediato si sospechas de acceso no autorizado a tu cuenta.</p>
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">3. Privacidad de datos</h4>
+            <p>Almacenamos únicamente la información necesaria para brindarte el servicio: tu nombre, email, y los registros financieros que tú mismo ingreses. No vendemos ni compartimos tus datos personales con terceros.</p>
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">4. Datos financieros</h4>
+            <p>Mi Luka no accede a tus cuentas bancarias. Todos los datos financieros son registrados manualmente por ti. La app es una herramienta de seguimiento, no un servicio bancario.</p>
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">5. Limitación de responsabilidad</h4>
+            <p>Mi Luka es una herramienta de apoyo financiero. No constituye asesoramiento financiero profesional. Las decisiones económicas que tomes son de tu exclusiva responsabilidad.</p>
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">6. Propiedad intelectual</h4>
+            <p>El contenido, diseño y funcionalidades de Mi Luka son propiedad exclusiva del equipo de Mi Luka. Queda prohibida su reproducción sin autorización expresa.</p>
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">7. Modificaciones</h4>
+            <p>Podemos actualizar estos términos en cualquier momento. Te notificaremos por email sobre cambios importantes. El uso continuo del servicio implica la aceptación de los nuevos términos.</p>
+          </section>
+
+          <section className="space-y-2">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100">8. Contacto</h4>
+            <p>¿Dudas o consultas? Escríbenos a <span className="text-[#4F46E5] font-medium">soporte@miluka.app</span></p>
+          </section>
+
+          <p className="text-xs text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-800">
+            Última actualización: Junio 2025 · Mi Luka v1.0
+          </p>
+        </div>
+
+        <motion.button
+          onClick={onClose}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          className="w-full py-3 rounded-xl text-white font-medium mt-2"
+          style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+        >
+          Entendido
+        </motion.button>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const fieldVariants = {
   hidden: { opacity: 0, y: 10 },
   show:   { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' } },
@@ -52,12 +131,13 @@ export function AuthPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const { signIn, signUp, user, loading } = useAuthContext()
-  const [tab, setTab] = useState<'login' | 'register'>(params.get('tab') === 'register' ? 'register' : 'login')
-  const [showPass, setShowPass] = useState(false)
+  const [tab, setTab]                     = useState<'login' | 'register'>(params.get('tab') === 'register' ? 'register' : 'login')
+  const [showPass, setShowPass]           = useState(false)
   const [showConfirmPass, setShowConfirmPass] = useState(false)
   const [intentosFallidos, setIntentosFallidos] = useState(0)
-  const [bloqueadoHasta, setBloqueadoHasta] = useState<number | null>(null)
-  const [countdown, setCountdown] = useState(0)
+  const [bloqueadoHasta, setBloqueadoHasta]     = useState<number | null>(null)
+  const [countdown, setCountdown]               = useState(0)
+  const [termsOpen, setTermsOpen]               = useState(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
@@ -81,8 +161,8 @@ export function AuthPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [bloqueadoHasta])
 
-  const loginForm    = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
-  const registerForm = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
+  const loginForm     = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
+  const registerForm  = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
   const watchPassword = registerForm.watch('password', '')
 
   const bloqueado = bloqueadoHasta !== null && Date.now() < bloqueadoHasta
@@ -132,16 +212,13 @@ export function AuthPage() {
           transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
           className="relative z-10 text-center text-white space-y-6 max-w-sm"
         >
-          {/* Logo con contenedor redondeado */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.15, duration: 0.5, type: 'spring', stiffness: 180, damping: 18 }}
             className="flex justify-center"
           >
-            <div className="px-6 py-4 bg-white/15 backdrop-blur-md rounded-3xl shadow-lg border border-white/20">
-              <img src={logoEslogan} alt="Mi Luka" className="w-44 object-contain" />
-            </div>
+            <img src={logoEslogan} alt="Mi Luka" className="w-48 object-contain rounded-2xl" />
           </motion.div>
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -162,11 +239,9 @@ export function AuthPage() {
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="w-full max-w-sm space-y-6"
         >
-          {/* Logo mobile con contenedor redondeado */}
+          {/* Logo mobile */}
           <div className="lg:hidden flex justify-center">
-            <div className="px-5 py-3 bg-white rounded-2xl shadow-md border border-gray-100">
-              <img src={logoEslogan} alt="Mi Luka" className="h-12 object-contain" />
-            </div>
+            <img src={logoEslogan} alt="Mi Luka" className="h-14 object-contain rounded-xl" />
           </div>
 
           <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5">
@@ -178,165 +253,236 @@ export function AuthPage() {
 
               {/* ─── LOGIN ─── */}
               <TabsContent value="login">
-                <motion.form
-                  onSubmit={handleLogin}
-                  className="space-y-4"
-                  initial="hidden"
-                  animate="show"
-                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-                >
-                  <motion.div variants={fieldVariants} className="space-y-1">
-                    <Label htmlFor="login-email">Correo electrónico</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input id="login-email" type="email" placeholder="tu@email.com" className="pl-10 rounded-xl"
-                        {...loginForm.register('email')} />
-                    </div>
-                    {loginForm.formState.errors.email && (
-                      <p className="text-xs text-red-500">{loginForm.formState.errors.email.message}</p>
-                    )}
-                  </motion.div>
-
-                  <motion.div variants={fieldVariants} className="space-y-1">
-                    <Label htmlFor="login-password">Contraseña</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input id="login-password" type={showPass ? 'text' : 'password'} placeholder="••••••••"
-                        className="pl-10 pr-10 rounded-xl" {...loginForm.register('password')} />
-                      <button type="button" onClick={() => setShowPass(!showPass)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                        {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {loginForm.formState.errors.password && (
-                      <p className="text-xs text-red-500">{loginForm.formState.errors.password.message}</p>
-                    )}
-                  </motion.div>
-
-                  {bloqueado && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm"
-                    >
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      <span>Cuenta bloqueada. Intenta en {countdown}s</span>
+                <AnimatePresence mode="wait">
+                  <motion.form
+                    key="login-form"
+                    onSubmit={handleLogin}
+                    noValidate
+                    className="space-y-4"
+                    initial="hidden"
+                    animate="show"
+                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+                  >
+                    <motion.div variants={fieldVariants} className="space-y-1">
+                      <Label htmlFor="login-email">Correo electrónico</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="tu@email.com"
+                          className="pl-10 rounded-xl"
+                          {...loginForm.register('email')}
+                        />
+                      </div>
+                      {loginForm.formState.errors.email && (
+                        <p className="text-xs text-red-500">{loginForm.formState.errors.email.message}</p>
+                      )}
                     </motion.div>
-                  )}
 
-                  <motion.div variants={fieldVariants}>
-                    <motion.button
-                      type="submit"
-                      disabled={loginForm.formState.isSubmitting || bloqueado}
-                      whileHover={{ scale: 1.02, y: -1 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                      className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
-                    >
-                      {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
-                    </motion.button>
-                  </motion.div>
-                </motion.form>
+                    <motion.div variants={fieldVariants} className="space-y-1">
+                      <Label htmlFor="login-password">Contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <Input
+                          id="login-password"
+                          type={showPass ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          className="pl-10 pr-10 rounded-xl"
+                          {...loginForm.register('password')}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(!showPass)}
+                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      {loginForm.formState.errors.password && (
+                        <p className="text-xs text-red-500">{loginForm.formState.errors.password.message}</p>
+                      )}
+                    </motion.div>
+
+                    {bloqueado && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm"
+                      >
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>Cuenta bloqueada. Intenta en {countdown}s</span>
+                      </motion.div>
+                    )}
+
+                    <motion.div variants={fieldVariants}>
+                      <motion.button
+                        type="submit"
+                        disabled={loginForm.formState.isSubmitting || bloqueado}
+                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                        className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                        style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+                      >
+                        {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
+                      </motion.button>
+                    </motion.div>
+                  </motion.form>
+                </AnimatePresence>
               </TabsContent>
 
               {/* ─── REGISTER ─── */}
               <TabsContent value="register">
-                <motion.form
-                  onSubmit={handleRegister}
-                  className="space-y-4"
-                  initial="hidden"
-                  animate="show"
-                  variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-                >
-                  <motion.div variants={fieldVariants} className="space-y-1">
-                    <Label htmlFor="reg-nombre">Nombre completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input id="reg-nombre" type="text" placeholder="Tu nombre" className="pl-10 rounded-xl"
-                        {...registerForm.register('nombre')} />
-                    </div>
-                    {registerForm.formState.errors.nombre && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.nombre.message}</p>
-                    )}
-                  </motion.div>
+                <AnimatePresence mode="wait">
+                  <motion.form
+                    key="register-form"
+                    onSubmit={handleRegister}
+                    noValidate
+                    className="space-y-4"
+                    initial="hidden"
+                    animate="show"
+                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+                  >
+                    <motion.div variants={fieldVariants} className="space-y-1">
+                      <Label htmlFor="reg-nombre">Nombre completo</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <Input
+                          id="reg-nombre"
+                          type="text"
+                          placeholder="Tu nombre"
+                          className="pl-10 rounded-xl"
+                          {...registerForm.register('nombre')}
+                        />
+                      </div>
+                      {registerForm.formState.errors.nombre && (
+                        <p className="text-xs text-red-500">{registerForm.formState.errors.nombre.message}</p>
+                      )}
+                    </motion.div>
 
-                  <motion.div variants={fieldVariants} className="space-y-1">
-                    <Label htmlFor="reg-email">Correo electrónico</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input id="reg-email" type="email" placeholder="tu@email.com" className="pl-10 rounded-xl"
-                        {...registerForm.register('email')} />
-                    </div>
-                    {registerForm.formState.errors.email && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.email.message}</p>
-                    )}
-                  </motion.div>
+                    <motion.div variants={fieldVariants} className="space-y-1">
+                      <Label htmlFor="reg-email">Correo electrónico</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <Input
+                          id="reg-email"
+                          type="email"
+                          placeholder="tu@email.com"
+                          className="pl-10 rounded-xl"
+                          {...registerForm.register('email')}
+                        />
+                      </div>
+                      {registerForm.formState.errors.email && (
+                        <p className="text-xs text-red-500">{registerForm.formState.errors.email.message}</p>
+                      )}
+                    </motion.div>
 
-                  <motion.div variants={fieldVariants} className="space-y-1">
-                    <Label htmlFor="reg-password">Contraseña</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input id="reg-password" type={showPass ? 'text' : 'password'} placeholder="••••••••"
-                        className="pl-10 pr-10 rounded-xl" {...registerForm.register('password')} />
-                      <button type="button" onClick={() => setShowPass(!showPass)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                        {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    <PasswordStrength password={watchPassword} />
-                    {registerForm.formState.errors.password && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.password.message}</p>
-                    )}
-                  </motion.div>
+                    <motion.div variants={fieldVariants} className="space-y-1">
+                      <Label htmlFor="reg-password">Contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <Input
+                          id="reg-password"
+                          type={showPass ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          className="pl-10 pr-10 rounded-xl"
+                          {...registerForm.register('password')}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPass(!showPass)}
+                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      <PasswordStrength password={watchPassword} />
+                      {registerForm.formState.errors.password && (
+                        <p className="text-xs text-red-500">{registerForm.formState.errors.password.message}</p>
+                      )}
+                    </motion.div>
 
-                  <motion.div variants={fieldVariants} className="space-y-1">
-                    <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input id="reg-confirm" type={showConfirmPass ? 'text' : 'password'} placeholder="••••••••"
-                        className="pl-10 pr-10 rounded-xl" {...registerForm.register('confirmPassword')} />
-                      <button type="button" onClick={() => setShowConfirmPass(!showConfirmPass)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600">
-                        {showConfirmPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {registerForm.formState.errors.confirmPassword && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
-                    )}
-                  </motion.div>
+                    <motion.div variants={fieldVariants} className="space-y-1">
+                      <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                        <Input
+                          id="reg-confirm"
+                          type={showConfirmPass ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          className="pl-10 pr-10 rounded-xl"
+                          {...registerForm.register('confirmPassword')}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPass(!showConfirmPass)}
+                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                        >
+                          {showConfirmPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                      {registerForm.formState.errors.confirmPassword && (
+                        <p className="text-xs text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
+                      )}
+                    </motion.div>
 
-                  <motion.div variants={fieldVariants} className="flex items-start gap-2">
-                    <input type="checkbox" id="terms" className="mt-1 rounded"
-                      {...registerForm.register('terms')} />
-                    <label htmlFor="terms" className="text-xs text-gray-500">
-                      Acepto los <span className="text-[#4F46E5] cursor-pointer">términos y condiciones</span> y la{' '}
-                      <span className="text-[#4F46E5] cursor-pointer">política de privacidad</span>
-                    </label>
-                  </motion.div>
-                  {registerForm.formState.errors.terms && (
-                    <p className="text-xs text-red-500">{registerForm.formState.errors.terms.message}</p>
-                  )}
+                    {/* Terms checkbox */}
+                    <motion.div variants={fieldVariants} className="space-y-1">
+                      <div className="flex items-start gap-2">
+                        <input
+                          type="checkbox"
+                          id="terms"
+                          className="mt-0.5 w-4 h-4 rounded accent-[#4F46E5] cursor-pointer"
+                          {...registerForm.register('terms')}
+                        />
+                        <label htmlFor="terms" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
+                          Acepto los{' '}
+                          <button
+                            type="button"
+                            onClick={() => setTermsOpen(true)}
+                            className="text-[#4F46E5] font-medium hover:underline"
+                          >
+                            términos y condiciones
+                          </button>
+                          {' '}y la{' '}
+                          <button
+                            type="button"
+                            onClick={() => setTermsOpen(true)}
+                            className="text-[#4F46E5] font-medium hover:underline"
+                          >
+                            política de privacidad
+                          </button>
+                        </label>
+                      </div>
+                      {registerForm.formState.errors.terms && (
+                        <p className="text-xs text-red-500">{registerForm.formState.errors.terms.message}</p>
+                      )}
+                    </motion.div>
 
-                  <motion.div variants={fieldVariants}>
-                    <motion.button
-                      type="submit"
-                      disabled={registerForm.formState.isSubmitting}
-                      whileHover={{ scale: 1.02, y: -1 }}
-                      whileTap={{ scale: 0.97 }}
-                      transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                      className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
-                    >
-                      {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
-                    </motion.button>
-                  </motion.div>
-                </motion.form>
+                    <motion.div variants={fieldVariants}>
+                      <motion.button
+                        type="submit"
+                        disabled={registerForm.formState.isSubmitting}
+                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                        className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                        style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+                      >
+                        {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
+                      </motion.button>
+                    </motion.div>
+                  </motion.form>
+                </AnimatePresence>
               </TabsContent>
             </Tabs>
           </div>
         </motion.div>
       </div>
+
+      {/* Terms & Conditions modal */}
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </div>
   )
 }
