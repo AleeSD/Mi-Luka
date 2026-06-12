@@ -107,13 +107,13 @@ export function MainLayout() {
       {/* ─── MAIN CONTENT ─── */}
       <main className="lg:ml-60 min-h-screen pb-20 lg:pb-0">
         <div className="max-w-2xl mx-auto lg:max-w-4xl">
-          <AnimatePresence mode="wait" initial={false}>
+          <AnimatePresence mode="sync" initial={false}>
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
             >
               <Outlet />
             </motion.div>

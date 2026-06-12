@@ -58,12 +58,10 @@ function BenefitCard({ benefit, index }: { benefit: Benefit; index: number }) {
 
   return (
     <motion.div
-      variants={{
-        hidden: { opacity: 0, y: 20, scale: 0.95 },
-        show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: index * 0.05 } },
-      }}
+      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: index * 0.05 }}
       whileHover={{ y: -4, boxShadow: `0 12px 32px ${benefit.color}22` }}
-      transition={{ duration: 0.2 }}
     >
       <Card className="p-5 rounded-2xl shadow-md relative overflow-hidden">
         {proximoVencer && (
@@ -199,8 +197,6 @@ export function BenefitsPage() {
       <motion.div
         variants={fadeUp}
         className="flex gap-2 overflow-x-auto pb-1 scrollbar-none"
-        initial="hidden"
-        animate="show"
       >
         <motion.div
           className="flex gap-2"
@@ -272,16 +268,11 @@ export function BenefitsPage() {
           </Card>
         </motion.div>
       ) : (
-        <motion.div
-          className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0"
-          initial="hidden"
-          animate="show"
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-        >
+        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0">
           {benefits.map((benefit, i) => (
             <BenefitCard key={benefit.id} benefit={benefit} index={i} />
           ))}
-        </motion.div>
+        </div>
       )}
     </motion.div>
   )
