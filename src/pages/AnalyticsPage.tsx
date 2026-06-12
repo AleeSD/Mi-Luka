@@ -26,11 +26,6 @@ const fadeUp = {
   show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
-
 export function AnalyticsPage() {
   const { expenses, loading } = useExpenses()
   const [periodo, setPeriodo] = useState<Periodo>('mes')
@@ -154,7 +149,9 @@ export function AnalyticsPage() {
         </motion.div>
       ) : (
         <motion.div
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
           className="grid grid-cols-2 lg:grid-cols-3 gap-3"
         >
           {[
@@ -180,15 +177,13 @@ export function AnalyticsPage() {
               sub: <p className="text-xs mt-1" style={{ color: topCategoria.color }}>{formatCurrency(topCategoria.value)}</p>,
               colSpan: 'col-span-2 lg:col-span-1',
             }] : []),
-          ].map(({ label, main, sub, colSpan = '' }) => (
+          ].map(({ label, main, sub, colSpan = '' }, i) => (
             <motion.div
               key={label}
-              variants={{
-                hidden: { opacity: 0, scale: 0.9, y: 8 },
-                show:   { opacity: 1, scale: 1,   y: 0, transition: { type: 'spring', stiffness: 260, damping: 20 } },
-              }}
+              initial={{ opacity: 0, scale: 0.9, y: 8 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: i * 0.08 }}
               whileHover={{ y: -2 }}
-              transition={{ duration: 0.18 }}
               className={colSpan}
             >
               <Card className="p-4 rounded-2xl shadow-sm h-full">
@@ -207,20 +202,27 @@ export function AnalyticsPage() {
           <Skeleton className="h-64 w-full rounded-2xl" />
         </motion.div>
       ) : gastosFiltrados.length === 0 ? (
-        <motion.div variants={fadeUp}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+        >
           <Card className="p-6 rounded-2xl shadow-md">
             <EmptyState emoji="📊" title="Sin datos en este período" description="Agrega gastos para ver tus estadísticas aquí." />
           </Card>
         </motion.div>
       ) : (
         <motion.div
-          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.1 } } }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
           className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0"
         >
           <motion.div
-            variants={scaleIn}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
             whileHover={{ y: -2 }}
-            transition={{ duration: 0.2 }}
           >
             <Card className="p-5 rounded-2xl shadow-md">
               <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--luka-text-primary)' }}>
@@ -245,9 +247,10 @@ export function AnalyticsPage() {
           </motion.div>
 
           <motion.div
-            variants={scaleIn}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.1 }}
             whileHover={{ y: -2 }}
-            transition={{ duration: 0.2 }}
           >
             <Card className="p-5 rounded-2xl shadow-md">
               <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--luka-text-primary)' }}>
@@ -293,7 +296,11 @@ export function AnalyticsPage() {
 
       {/* Desglose detallado */}
       {!loading && porCategoria.length > 0 && (
-        <motion.div variants={fadeUp}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+        >
           <Card className="p-5 rounded-2xl shadow-md">
             <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--luka-text-primary)' }}>Desglose detallado</h3>
             <motion.div

@@ -29,11 +29,6 @@ const fadeUp = {
   show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
-
 export function GoalsPage() {
   const { goalsActivas, goalsCompletadas, loading, addGoal, contribuir, removeGoal } = useGoals()
   const [showNueva, setShowNueva]           = useState(false)
@@ -107,7 +102,11 @@ export function GoalsPage() {
 
       {/* Stats card */}
       {!loading && goalsActivas.length > 0 && (
-        <motion.div variants={scaleIn}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.94, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.08 }}
+        >
           <motion.div
             whileHover={{ scale: 1.01, y: -2 }}
             transition={{ duration: 0.2 }}
@@ -150,7 +149,11 @@ export function GoalsPage() {
           {[1, 2].map((i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)}
         </motion.div>
       ) : goalsActivas.length === 0 ? (
-        <motion.div variants={fadeUp}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.1 }}
+        >
           <Card className="rounded-2xl shadow-md overflow-hidden">
             <EmptyState
               emoji="🎯"
@@ -174,7 +177,7 @@ export function GoalsPage() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.22 }}
           className="space-y-4"
         >
           {goalsActivas.map((goal, i) => {
@@ -261,7 +264,11 @@ export function GoalsPage() {
 
       {/* Metas completadas */}
       {goalsCompletadas.length > 0 && (
-        <motion.div variants={fadeUp}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+        >
           <motion.button
             onClick={() => setShowCompletadas(!showCompletadas)}
             whileHover={{ x: 2 }}

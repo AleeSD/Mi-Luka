@@ -9,22 +9,25 @@ export function useExpenses() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
-  const load = useCallback(async () => {
-    if (!user) return
+  useEffect(() => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
     setLoading(true)
     setError(null)
-    try {
-      const data = await getExpenses(user.id)
-      setExpenses(data)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando gastos')
-    } finally {
-      setLoading(false)
-    }
-  }, [user])
 
-  useEffect(() => { load() }, [load])
+    getExpenses(user.id)
+      .then(data  => { if (!cancelled) setExpenses(data) })
+      .catch(e    => { if (!cancelled) setError(e instanceof Error ? e.message : 'Error cargando gastos') })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [user, retryCount])
 
   const addExpense = useCallback(async (data: ExpenseFormData): Promise<Expense> => {
     if (!user) throw new Error('No autenticado')
@@ -52,5 +55,9 @@ export function useExpenses() {
     })
     .reduce((acc, e) => acc + Number(e.monto), 0)
 
-  return { expenses, loading, error, refresh: load, addExpense, editExpense, removeExpense, totalMes }
+  return {
+    expenses, loading, error,
+    refresh: () => setRetryCount(n => n + 1),
+    addExpense, editExpense, removeExpense, totalMes,
+  }
 }

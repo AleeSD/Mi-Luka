@@ -162,7 +162,12 @@ export function DashboardPage() {
 
       {/* Metas Activas preview */}
       {!goalsLoading && goalsActivas.length > 0 && (
-        <motion.div variants={fadeUp} className="space-y-3">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          className="space-y-3"
+        >
           <div className="flex items-center justify-between">
             <h3 className="font-medium" style={{ color: 'var(--luka-text-primary)' }}>Mis metas</h3>
             <button onClick={() => navigate('/app/goals')} className="text-sm" style={{ color: 'var(--luka-blue)' }}>
@@ -206,7 +211,11 @@ export function DashboardPage() {
 
       {/* Pie chart gastos por categoría */}
       {!expensesLoading && porCategoria.length > 0 && (
-        <motion.div variants={fadeUp}>
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+        >
           <Card className="p-5 rounded-2xl shadow-md">
             <h3 className="mb-4 font-medium" style={{ color: 'var(--luka-text-primary)' }}>Gastos por categoría</h3>
             <div className="flex items-center gap-4">

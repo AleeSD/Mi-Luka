@@ -9,26 +9,30 @@ export function useChallenges() {
   const [userChallenges, setUserChallenges] = useState<UserChallenge[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
 
-  const load = useCallback(async () => {
-    if (!user) return
+  useEffect(() => {
+    if (!user) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
     setLoading(true)
     setError(null)
-    try {
-      const [allChallenges, userC] = await Promise.all([
-        getChallenges(),
-        getUserChallenges(user.id),
-      ])
-      setChallenges(allChallenges)
-      setUserChallenges(userC)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando retos')
-    } finally {
-      setLoading(false)
-    }
-  }, [user])
 
-  useEffect(() => { load() }, [load])
+    Promise.all([getChallenges(), getUserChallenges(user.id)])
+      .then(([allChallenges, userC]) => {
+        if (!cancelled) {
+          setChallenges(allChallenges)
+          setUserChallenges(userC)
+        }
+      })
+      .catch(e    => { if (!cancelled) setError(e instanceof Error ? e.message : 'Error cargando retos') })
+      .finally(() => { if (!cancelled) setLoading(false) })
+
+    return () => { cancelled = true }
+  }, [user, retryCount])
 
   const acceptChallenge = useCallback(async (challengeId: string): Promise<void> => {
     if (!user) throw new Error('No autenticado')
@@ -44,10 +48,14 @@ export function useChallenges() {
     )
   }, [user])
 
-  const acceptedIds = new Set(userChallenges.map((uc) => uc.challenge_id))
-  const disponibles = challenges.filter((c) => !acceptedIds.has(c.id))
-  const enCurso = userChallenges.filter((uc) => !uc.completado)
-  const completados = userChallenges.filter((uc) => uc.completado)
+  const acceptedIds   = new Set(userChallenges.map((uc) => uc.challenge_id))
+  const disponibles   = challenges.filter((c) => !acceptedIds.has(c.id))
+  const enCurso       = userChallenges.filter((uc) => !uc.completado)
+  const completados   = userChallenges.filter((uc) => uc.completado)
 
-  return { challenges, userChallenges, disponibles, enCurso, completados, loading, error, refresh: load, acceptChallenge, completeChallenge }
+  return {
+    challenges, userChallenges, disponibles, enCurso, completados, loading, error,
+    refresh: () => setRetryCount(n => n + 1),
+    acceptChallenge, completeChallenge,
+  }
 }
