@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { Eye, EyeOff, Mail, Lock, User, AlertCircle, FileText, Shield } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthContext } from '@/context/AuthContext'
@@ -122,11 +122,6 @@ function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   )
 }
 
-const fieldVariants = {
-  hidden: { opacity: 0, y: 10 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.28, ease: 'easeOut' } },
-}
-
 export function AuthPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
@@ -161,11 +156,18 @@ export function AuthPage() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [bloqueadoHasta])
 
-  const loginForm     = useForm<LoginFormData>({ resolver: zodResolver(loginSchema) })
-  const registerForm  = useForm<RegisterFormData>({ resolver: zodResolver(registerSchema) })
-  const watchPassword = registerForm.watch('password', '')
+  const loginForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  })
 
-  const bloqueado = bloqueadoHasta !== null && Date.now() < bloqueadoHasta
+  const registerForm = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { nombre: '', email: '', password: '', confirmPassword: '', terms: false },
+  })
+
+  const watchPassword = registerForm.watch('password', '')
+  const bloqueado     = bloqueadoHasta !== null && Date.now() < bloqueadoHasta
 
   const handleLogin = loginForm.handleSubmit(async (data) => {
     if (bloqueado) return
@@ -253,228 +255,208 @@ export function AuthPage() {
 
               {/* ─── LOGIN ─── */}
               <TabsContent value="login">
-                <AnimatePresence mode="wait">
-                  <motion.form
-                    key="login-form"
-                    onSubmit={handleLogin}
-                    noValidate
-                    className="space-y-4"
-                    initial="hidden"
-                    animate="show"
-                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.08 } } }}
-                  >
-                    <motion.div variants={fieldVariants} className="space-y-1">
-                      <Label htmlFor="login-email">Correo electrónico</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <Input
-                          id="login-email"
-                          type="email"
-                          placeholder="tu@email.com"
-                          className="pl-10 rounded-xl"
-                          {...loginForm.register('email')}
-                        />
-                      </div>
-                      {loginForm.formState.errors.email && (
-                        <p className="text-xs text-red-500">{loginForm.formState.errors.email.message}</p>
-                      )}
-                    </motion.div>
+                <form onSubmit={handleLogin} noValidate className="space-y-4">
 
-                    <motion.div variants={fieldVariants} className="space-y-1">
-                      <Label htmlFor="login-password">Contraseña</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <Input
-                          id="login-password"
-                          type={showPass ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          className="pl-10 pr-10 rounded-xl"
-                          {...loginForm.register('password')}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPass(!showPass)}
-                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                        >
-                          {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                      {loginForm.formState.errors.password && (
-                        <p className="text-xs text-red-500">{loginForm.formState.errors.password.message}</p>
-                      )}
-                    </motion.div>
-
-                    {bloqueado && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm"
-                      >
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        <span>Cuenta bloqueada. Intenta en {countdown}s</span>
-                      </motion.div>
+                  <div className="space-y-1">
+                    <Label htmlFor="login-email">Correo electrónico</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="login-email"
+                        type="email"
+                        placeholder="tu@email.com"
+                        autoComplete="email"
+                        className="pl-10 rounded-xl"
+                        {...loginForm.register('email')}
+                      />
+                    </div>
+                    {loginForm.formState.errors.email && (
+                      <p className="text-xs text-red-500">{loginForm.formState.errors.email.message}</p>
                     )}
+                  </div>
 
-                    <motion.div variants={fieldVariants}>
-                      <motion.button
-                        type="submit"
-                        disabled={loginForm.formState.isSubmitting || bloqueado}
-                        whileHover={{ scale: 1.02, y: -1 }}
-                        whileTap={{ scale: 0.97 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                        className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
-                        style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+                  <div className="space-y-1">
+                    <Label htmlFor="login-password">Contraseña</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="login-password"
+                        type={showPass ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        autoComplete="current-password"
+                        className="pl-10 pr-10 rounded-xl"
+                        {...loginForm.register('password')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       >
-                        {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
-                      </motion.button>
-                    </motion.div>
-                  </motion.form>
-                </AnimatePresence>
+                        {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {loginForm.formState.errors.password && (
+                      <p className="text-xs text-red-500">{loginForm.formState.errors.password.message}</p>
+                    )}
+                  </div>
+
+                  {bloqueado && (
+                    <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>Cuenta bloqueada. Intenta en {countdown}s</span>
+                    </div>
+                  )}
+
+                  <motion.button
+                    type="submit"
+                    disabled={loginForm.formState.isSubmitting || bloqueado}
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+                  >
+                    {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
+                  </motion.button>
+                </form>
               </TabsContent>
 
               {/* ─── REGISTER ─── */}
               <TabsContent value="register">
-                <AnimatePresence mode="wait">
-                  <motion.form
-                    key="register-form"
-                    onSubmit={handleRegister}
-                    noValidate
-                    className="space-y-4"
-                    initial="hidden"
-                    animate="show"
-                    variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
-                  >
-                    <motion.div variants={fieldVariants} className="space-y-1">
-                      <Label htmlFor="reg-nombre">Nombre completo</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <Input
-                          id="reg-nombre"
-                          type="text"
-                          placeholder="Tu nombre"
-                          className="pl-10 rounded-xl"
-                          {...registerForm.register('nombre')}
-                        />
-                      </div>
-                      {registerForm.formState.errors.nombre && (
-                        <p className="text-xs text-red-500">{registerForm.formState.errors.nombre.message}</p>
-                      )}
-                    </motion.div>
+                <form onSubmit={handleRegister} noValidate className="space-y-4">
 
-                    <motion.div variants={fieldVariants} className="space-y-1">
-                      <Label htmlFor="reg-email">Correo electrónico</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <Input
-                          id="reg-email"
-                          type="email"
-                          placeholder="tu@email.com"
-                          className="pl-10 rounded-xl"
-                          {...registerForm.register('email')}
-                        />
-                      </div>
-                      {registerForm.formState.errors.email && (
-                        <p className="text-xs text-red-500">{registerForm.formState.errors.email.message}</p>
-                      )}
-                    </motion.div>
+                  <div className="space-y-1">
+                    <Label htmlFor="reg-nombre">Nombre completo</Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="reg-nombre"
+                        type="text"
+                        placeholder="Tu nombre"
+                        autoComplete="name"
+                        className="pl-10 rounded-xl"
+                        {...registerForm.register('nombre')}
+                      />
+                    </div>
+                    {registerForm.formState.errors.nombre && (
+                      <p className="text-xs text-red-500">{registerForm.formState.errors.nombre.message}</p>
+                    )}
+                  </div>
 
-                    <motion.div variants={fieldVariants} className="space-y-1">
-                      <Label htmlFor="reg-password">Contraseña</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <Input
-                          id="reg-password"
-                          type={showPass ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          className="pl-10 pr-10 rounded-xl"
-                          {...registerForm.register('password')}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPass(!showPass)}
-                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                        >
-                          {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                      <PasswordStrength password={watchPassword} />
-                      {registerForm.formState.errors.password && (
-                        <p className="text-xs text-red-500">{registerForm.formState.errors.password.message}</p>
-                      )}
-                    </motion.div>
+                  <div className="space-y-1">
+                    <Label htmlFor="reg-email">Correo electrónico</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="reg-email"
+                        type="email"
+                        placeholder="tu@email.com"
+                        autoComplete="email"
+                        className="pl-10 rounded-xl"
+                        {...registerForm.register('email')}
+                      />
+                    </div>
+                    {registerForm.formState.errors.email && (
+                      <p className="text-xs text-red-500">{registerForm.formState.errors.email.message}</p>
+                    )}
+                  </div>
 
-                    <motion.div variants={fieldVariants} className="space-y-1">
-                      <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                        <Input
-                          id="reg-confirm"
-                          type={showConfirmPass ? 'text' : 'password'}
-                          placeholder="••••••••"
-                          className="pl-10 pr-10 rounded-xl"
-                          {...registerForm.register('confirmPassword')}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPass(!showConfirmPass)}
-                          className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                        >
-                          {showConfirmPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                        </button>
-                      </div>
-                      {registerForm.formState.errors.confirmPassword && (
-                        <p className="text-xs text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
-                      )}
-                    </motion.div>
-
-                    {/* Terms checkbox */}
-                    <motion.div variants={fieldVariants} className="space-y-1">
-                      <div className="flex items-start gap-2">
-                        <input
-                          type="checkbox"
-                          id="terms"
-                          className="mt-0.5 w-4 h-4 rounded accent-[#4F46E5] cursor-pointer"
-                          {...registerForm.register('terms')}
-                        />
-                        <label htmlFor="terms" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
-                          Acepto los{' '}
-                          <button
-                            type="button"
-                            onClick={() => setTermsOpen(true)}
-                            className="text-[#4F46E5] font-medium hover:underline"
-                          >
-                            términos y condiciones
-                          </button>
-                          {' '}y la{' '}
-                          <button
-                            type="button"
-                            onClick={() => setTermsOpen(true)}
-                            className="text-[#4F46E5] font-medium hover:underline"
-                          >
-                            política de privacidad
-                          </button>
-                        </label>
-                      </div>
-                      {registerForm.formState.errors.terms && (
-                        <p className="text-xs text-red-500">{registerForm.formState.errors.terms.message}</p>
-                      )}
-                    </motion.div>
-
-                    <motion.div variants={fieldVariants}>
-                      <motion.button
-                        type="submit"
-                        disabled={registerForm.formState.isSubmitting}
-                        whileHover={{ scale: 1.02, y: -1 }}
-                        whileTap={{ scale: 0.97 }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-                        className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
-                        style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+                  <div className="space-y-1">
+                    <Label htmlFor="reg-password">Contraseña</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="reg-password"
+                        type={showPass ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        className="pl-10 pr-10 rounded-xl"
+                        {...registerForm.register('password')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPass(!showPass)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       >
-                        {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
-                      </motion.button>
-                    </motion.div>
-                  </motion.form>
-                </AnimatePresence>
+                        {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    <PasswordStrength password={watchPassword} />
+                    {registerForm.formState.errors.password && (
+                      <p className="text-xs text-red-500">{registerForm.formState.errors.password.message}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                      <Input
+                        id="reg-confirm"
+                        type={showConfirmPass ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        autoComplete="new-password"
+                        className="pl-10 pr-10 rounded-xl"
+                        {...registerForm.register('confirmPassword')}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      >
+                        {showConfirmPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                      </button>
+                    </div>
+                    {registerForm.formState.errors.confirmPassword && (
+                      <p className="text-xs text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
+                    )}
+                  </div>
+
+                  {/* Terms */}
+                  <div className="space-y-1">
+                    <div className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        id="terms"
+                        className="mt-0.5 w-4 h-4 rounded accent-[#4F46E5] cursor-pointer flex-shrink-0"
+                        {...registerForm.register('terms')}
+                      />
+                      <label htmlFor="terms" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
+                        Acepto los{' '}
+                        <button
+                          type="button"
+                          onClick={() => setTermsOpen(true)}
+                          className="text-[#4F46E5] font-medium hover:underline"
+                        >
+                          términos y condiciones
+                        </button>
+                        {' '}y la{' '}
+                        <button
+                          type="button"
+                          onClick={() => setTermsOpen(true)}
+                          className="text-[#4F46E5] font-medium hover:underline"
+                        >
+                          política de privacidad
+                        </button>
+                      </label>
+                    </div>
+                    {registerForm.formState.errors.terms && (
+                      <p className="text-xs text-red-500">{registerForm.formState.errors.terms.message}</p>
+                    )}
+                  </div>
+
+                  <motion.button
+                    type="submit"
+                    disabled={registerForm.formState.isSubmitting}
+                    whileHover={{ scale: 1.02, y: -1 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                    className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                    style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+                  >
+                    {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
+                  </motion.button>
+                </form>
               </TabsContent>
             </Tabs>
           </div>
