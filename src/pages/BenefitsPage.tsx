@@ -1,4 +1,4 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Gift, ExternalLink, Copy, Check, AlertCircle } from 'lucide-react'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
@@ -27,12 +27,12 @@ const pageVariants = {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 function BenefitCard({ benefit, index }: { benefit: Benefit; index: number }) {
@@ -60,7 +60,7 @@ function BenefitCard({ benefit, index }: { benefit: Benefit; index: number }) {
     <motion.div
       variants={{
         hidden: { opacity: 0, y: 20, scale: 0.95 },
-        show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1], delay: index * 0.05 } },
+        show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: index * 0.05 } },
       }}
       whileHover={{ y: -4, boxShadow: `0 12px 32px ${benefit.color}22` }}
       transition={{ duration: 0.2 }}
@@ -143,7 +143,7 @@ function BenefitCard({ benefit, index }: { benefit: Benefit; index: number }) {
 }
 
 export function BenefitsPage() {
-  const { benefits, loading, setCategoriaActiva } = useBenefits()
+  const { benefits, loading, error, setCategoriaActiva } = useBenefits()
   const [filtro, setFiltro] = useState<CategoriaBeneficio | 'todos'>('todos')
 
   const handleFiltro = (value: CategoriaBeneficio | 'todos') => {
@@ -243,7 +243,15 @@ export function BenefitsPage() {
       </motion.div>
 
       {/* Grid de beneficios */}
-      {loading ? (
+      {error ? (
+        <motion.div variants={fadeUp}>
+          <Card className="rounded-2xl shadow-md p-6 flex flex-col items-center gap-3 text-center">
+            <AlertCircle className="w-10 h-10 text-red-400" />
+            <p className="font-medium" style={{ color: 'var(--luka-text-primary)' }}>No se pudieron cargar los beneficios</p>
+            <p className="text-sm" style={{ color: 'var(--luka-text-secondary)' }}>{error}</p>
+          </Card>
+        </motion.div>
+      ) : loading ? (
         <motion.div variants={fadeUp} className="space-y-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 w-full rounded-2xl" />)}
         </motion.div>

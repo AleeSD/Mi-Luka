@@ -1,10 +1,9 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Trophy, Award, Zap, Star, Crown, Target, Flame, Check } from 'lucide-react'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 import { Card } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -34,12 +33,12 @@ const pageVariants = {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 export function ChallengesPage() {
@@ -121,7 +120,7 @@ export function ChallengesPage() {
                     className="h-full rounded-full bg-white"
                     initial={{ width: 0 }}
                     animate={{ width: `${levelPct}%` }}
-                    transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
+                    transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.3 }}
                   />
                 </div>
                 <p className="text-white/70 text-xs">{nextLevelPuntos - puntos} puntos para el nivel {nivel + 1}</p>
@@ -173,7 +172,7 @@ export function ChallengesPage() {
                     key={challenge.id}
                     variants={{
                       hidden: { opacity: 0, y: 12, scale: 0.97 },
-                      show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } },
+                      show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
                     }}
                     whileHover={{ y: -2 }}
                     transition={{ duration: 0.18 }}
@@ -247,7 +246,7 @@ export function ChallengesPage() {
                     key={uc.id}
                     variants={{
                       hidden: { opacity: 0, y: 12, scale: 0.97 },
-                      show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] } },
+                      show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
                     }}
                     whileHover={{ y: -2 }}
                     transition={{ duration: 0.18 }}
@@ -273,7 +272,7 @@ export function ChallengesPage() {
                               className="h-full rounded-full"
                               initial={{ width: 0 }}
                               animate={{ width: `${pct}%` }}
-                              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+                              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.2 }}
                               style={{ background: color }}
                             />
                           </div>

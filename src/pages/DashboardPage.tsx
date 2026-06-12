@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router'
+﻿import { useNavigate } from 'react-router'
 import { PlusCircle, Target, Sparkles, TrendingDown, TrendingUp, RefreshCw, Trophy, Gift } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { motion } from 'motion/react'
@@ -21,12 +21,12 @@ const pageVariants = {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 18 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.95, y: 14 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 export function DashboardPage() {
@@ -333,7 +333,7 @@ export function DashboardPage() {
         <motion.div
           variants={{
             hidden: { opacity: 0, scale: 0.88, y: 14 },
-            show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] } },
+            show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
           }}
           whileHover={{ y: -5, boxShadow: '0 14px 36px rgba(139,92,246,0.2)' }}
           transition={{ duration: 0.2 }}
@@ -355,7 +355,7 @@ export function DashboardPage() {
         <motion.div
           variants={{
             hidden: { opacity: 0, scale: 0.88, y: 14 },
-            show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] } },
+            show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
           }}
           whileHover={{ y: -5, boxShadow: '0 14px 36px rgba(245,158,11,0.2)' }}
           transition={{ duration: 0.2 }}

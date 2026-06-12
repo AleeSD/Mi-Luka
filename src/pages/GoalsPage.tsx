@@ -1,7 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Plus, Calendar, TrendingUp, ChevronDown, ChevronUp, Trash2 } from 'lucide-react'
+import { Plus, Calendar, TrendingUp, ChevronDown, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
@@ -26,12 +26,12 @@ const pageVariants = {
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] } },
+  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
 export function GoalsPage() {
@@ -187,7 +187,7 @@ export function GoalsPage() {
                 key={goal.id}
                 variants={{
                   hidden: { opacity: 0, x: 20,  y: 6 },
-                  show:   { opacity: 1, x: 0,   y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] } },
+                  show:   { opacity: 1, x: 0,   y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
                 }}
                 whileHover={{ y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.1)' }}
                 transition={{ duration: 0.2 }}
@@ -234,7 +234,7 @@ export function GoalsPage() {
                         className="h-full rounded-full"
                         initial={{ width: 0 }}
                         animate={{ width: `${pct}%` }}
-                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.2 }}
                         style={{ background: `linear-gradient(90deg, ${goal.color}, ${goal.color}cc)` }}
                       />
                     </div>

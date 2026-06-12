@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+﻿import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { motion } from 'motion/react'
 import { Wallet, TrendingUp, Target, Sparkles } from 'lucide-react'
@@ -123,7 +123,7 @@ export function WelcomePage() {
         <motion.div
           initial={{ opacity: 0, x: 40, scale: 0.9 }}
           animate={{ opacity: 1, x: 0, scale: 1 }}
-          transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
           className="relative z-10 text-center text-white space-y-6"
         >
           {/* Floating icon box */}

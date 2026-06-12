@@ -1,5 +1,5 @@
 import { Outlet, useNavigate, useLocation } from 'react-router'
-import { Home, PlusCircle, TrendingUp, Target, User } from 'lucide-react'
+import { Home, PlusCircle, TrendingUp, Target, User, Gift } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import logoNormal from '@/assets/logo.png'
 
@@ -8,6 +8,7 @@ const navItems = [
   { path: '/app/analytics',   icon: TrendingUp,  label: 'Análisis' },
   { path: '/app/add-expense', icon: PlusCircle,  label: 'Agregar', isSpecial: true },
   { path: '/app/goals',       icon: Target,      label: 'Metas'    },
+  { path: '/app/benefits',    icon: Gift,        label: 'Beneficios' },
   { path: '/app/profile',     icon: User,        label: 'Perfil'   },
 ]
 
