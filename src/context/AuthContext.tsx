@@ -11,6 +11,7 @@ interface AuthContextValue {
   signUp: (email: string, password: string, nombre: string) => Promise<void>
   signOut: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
+  updatePassword: (newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -50,7 +51,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { nombre: nombreSanitizado } },
+      options: {
+        data: { nombre: nombreSanitizado },
+        emailRedirectTo: `${window.location.origin}/auth`,
+      },
     })
     if (error) {
       if (error.message.includes('already registered')) {
@@ -71,8 +75,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw new Error('No se pudo enviar el correo de recuperación')
   }, [])
 
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw new Error('No se pudo actualizar la contraseña')
+  }, [])
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, resetPassword, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )

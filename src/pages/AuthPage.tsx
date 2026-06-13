@@ -1,13 +1,17 @@
-﻿import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { motion } from 'motion/react'
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, FileText, Shield } from 'lucide-react'
+import { motion, AnimatePresence } from 'motion/react'
+import { Eye, EyeOff, Mail, Lock, User, AlertCircle, FileText, Shield, KeyRound, ArrowLeft, CheckCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuthContext } from '@/context/AuthContext'
-import { loginSchema, registerSchema } from '@/lib/validations/auth'
-import type { LoginFormData, RegisterFormData } from '@/lib/validations/auth'
+import {
+  loginSchema, registerSchema, forgotSchema, resetPasswordSchema,
+} from '@/lib/validations/auth'
+import type {
+  LoginFormData, RegisterFormData, ForgotFormData, ResetPasswordFormData,
+} from '@/lib/validations/auth'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +20,8 @@ import logoEslogan from '@/assets/logo-eslogan.png'
 
 const MAX_INTENTOS     = 5
 const BLOQUEO_SEGUNDOS = 60
+
+type View = 'auth' | 'forgot' | 'forgot-sent' | 'reset'
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -125,10 +131,14 @@ function TermsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 export function AuthPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const { signIn, signUp, user, loading } = useAuthContext()
-  const [tab, setTab]                     = useState<'login' | 'register'>(params.get('tab') === 'register' ? 'register' : 'login')
-  const [showPass, setShowPass]           = useState(false)
+  const { signIn, signUp, resetPassword, updatePassword, user, loading } = useAuthContext()
+
+  const [tab, setTab]       = useState<'login' | 'register'>(params.get('tab') === 'register' ? 'register' : 'login')
+  const [view, setView]     = useState<View>(() => params.get('reset') === 'true' ? 'reset' : 'auth')
+  const [showPass, setShowPass]               = useState(false)
   const [showConfirmPass, setShowConfirmPass] = useState(false)
+  const [showResetPass, setShowResetPass]     = useState(false)
+  const [showResetConfirm, setShowResetConfirm] = useState(false)
   const [intentosFallidos, setIntentosFallidos] = useState(0)
   const [bloqueadoHasta, setBloqueadoHasta]     = useState<number | null>(null)
   const [countdown, setCountdown]               = useState(0)
@@ -136,8 +146,16 @@ export function AuthPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (!loading && user) navigate('/app', { replace: true })
-  }, [user, loading, navigate])
+    if (!loading && user && view !== 'reset') navigate('/app', { replace: true })
+  }, [user, loading, navigate, view])
+
+  // Detect recovery token in URL hash (Supabase puts it there after email link click)
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash.includes('type=recovery') || params.get('reset') === 'true') {
+      setView('reset')
+    }
+  }, [params])
 
   useEffect(() => {
     if (bloqueadoHasta) {
@@ -166,8 +184,19 @@ export function AuthPage() {
     defaultValues: { nombre: '', email: '', password: '', confirmPassword: '', terms: false },
   })
 
-  const watchPassword = registerForm.watch('password', '')
-  const bloqueado     = bloqueadoHasta !== null && Date.now() < bloqueadoHasta
+  const forgotForm = useForm<ForgotFormData>({
+    resolver: zodResolver(forgotSchema),
+    defaultValues: { email: '' },
+  })
+
+  const resetForm = useForm<ResetPasswordFormData>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: { password: '', confirmPassword: '' },
+  })
+
+  const watchPassword        = registerForm.watch('password', '')
+  const watchResetPassword   = resetForm.watch('password', '')
+  const bloqueado            = bloqueadoHasta !== null && Date.now() < bloqueadoHasta
 
   const handleLogin = loginForm.handleSubmit(async (data) => {
     if (bloqueado) return
@@ -190,13 +219,39 @@ export function AuthPage() {
   const handleRegister = registerForm.handleSubmit(async (data) => {
     try {
       await signUp(data.email, data.password, data.nombre)
-      toast.success('¡Cuenta creada! Revisa tu email para confirmarla.')
+      toast.success('¡Cuenta creada! Revisa tu email para confirmarla.', { duration: 6000 })
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error al crear la cuenta')
     }
   })
 
+  const handleForgot = forgotForm.handleSubmit(async (data) => {
+    try {
+      await resetPassword(data.email)
+      setView('forgot-sent')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error al enviar el correo')
+    }
+  })
+
+  const handleReset = resetForm.handleSubmit(async (data) => {
+    try {
+      await updatePassword(data.password)
+      toast.success('¡Contraseña actualizada! Ya puedes iniciar sesión.')
+      navigate('/auth', { replace: true })
+      setView('auth')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Error al actualizar la contraseña')
+    }
+  })
+
   if (loading) return null
+
+  const slideVariants = {
+    enter:  { opacity: 0, x: 20 },
+    center: { opacity: 1, x: 0  },
+    exit:   { opacity: 0, x: -20 },
+  }
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#F9FAFB] dark:bg-gray-950">
@@ -246,220 +301,448 @@ export function AuthPage() {
             <img src={logoEslogan} alt="Mi Luka" className="h-14 object-contain rounded-xl" />
           </div>
 
-          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5">
-            <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'register')}>
-              <TabsList className="grid w-full grid-cols-2 mb-4">
-                <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
-                <TabsTrigger value="register">Crear cuenta</TabsTrigger>
-              </TabsList>
+          <AnimatePresence mode="wait">
 
-              {/* ─── LOGIN ─── */}
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} noValidate className="space-y-4">
+            {/* ─── MAIN AUTH (login / register) ─── */}
+            {view === 'auth' && (
+              <motion.div
+                key="auth"
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5"
+              >
+                <Tabs value={tab} onValueChange={(v) => setTab(v as 'login' | 'register')}>
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
+                    <TabsTrigger value="register">Crear cuenta</TabsTrigger>
+                  </TabsList>
 
+                  {/* ─── LOGIN ─── */}
+                  <TabsContent value="login">
+                    <form onSubmit={handleLogin} noValidate className="space-y-4">
+
+                      <div className="space-y-1">
+                        <Label htmlFor="login-email">Correo electrónico</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="login-email"
+                            type="email"
+                            placeholder="tu@email.com"
+                            autoComplete="email"
+                            className="pl-10 rounded-xl"
+                            {...loginForm.register('email')}
+                          />
+                        </div>
+                        {loginForm.formState.errors.email && (
+                          <p className="text-xs text-red-500">{loginForm.formState.errors.email.message}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="login-password">Contraseña</Label>
+                          <button
+                            type="button"
+                            onClick={() => setView('forgot')}
+                            className="text-xs text-[#4F46E5] hover:underline font-medium"
+                          >
+                            ¿Olvidaste tu contraseña?
+                          </button>
+                        </div>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="login-password"
+                            type={showPass ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            className="pl-10 pr-10 rounded-xl"
+                            {...loginForm.register('password')}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPass(!showPass)}
+                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        {loginForm.formState.errors.password && (
+                          <p className="text-xs text-red-500">{loginForm.formState.errors.password.message}</p>
+                        )}
+                      </div>
+
+                      {bloqueado && (
+                        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm">
+                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                          <span>Cuenta bloqueada. Intenta en {countdown}s</span>
+                        </div>
+                      )}
+
+                      <motion.button
+                        type="submit"
+                        disabled={loginForm.formState.isSubmitting || bloqueado}
+                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                        className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                        style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+                      >
+                        {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
+                      </motion.button>
+                    </form>
+                  </TabsContent>
+
+                  {/* ─── REGISTER ─── */}
+                  <TabsContent value="register">
+                    <form onSubmit={handleRegister} noValidate className="space-y-4">
+
+                      <div className="space-y-1">
+                        <Label htmlFor="reg-nombre">Nombre completo</Label>
+                        <div className="relative">
+                          <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="reg-nombre"
+                            type="text"
+                            placeholder="Tu nombre"
+                            autoComplete="name"
+                            className="pl-10 rounded-xl"
+                            {...registerForm.register('nombre')}
+                          />
+                        </div>
+                        {registerForm.formState.errors.nombre && (
+                          <p className="text-xs text-red-500">{registerForm.formState.errors.nombre.message}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="reg-email">Correo electrónico</Label>
+                        <div className="relative">
+                          <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="reg-email"
+                            type="email"
+                            placeholder="tu@email.com"
+                            autoComplete="email"
+                            className="pl-10 rounded-xl"
+                            {...registerForm.register('email')}
+                          />
+                        </div>
+                        {registerForm.formState.errors.email && (
+                          <p className="text-xs text-red-500">{registerForm.formState.errors.email.message}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="reg-password">Contraseña</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="reg-password"
+                            type={showPass ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            autoComplete="new-password"
+                            className="pl-10 pr-10 rounded-xl"
+                            {...registerForm.register('password')}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPass(!showPass)}
+                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        <PasswordStrength password={watchPassword} />
+                        {registerForm.formState.errors.password && (
+                          <p className="text-xs text-red-500">{registerForm.formState.errors.password.message}</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                          <Input
+                            id="reg-confirm"
+                            type={showConfirmPass ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            autoComplete="new-password"
+                            className="pl-10 pr-10 rounded-xl"
+                            {...registerForm.register('confirmPassword')}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPass(!showConfirmPass)}
+                            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                          >
+                            {showConfirmPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                          </button>
+                        </div>
+                        {registerForm.formState.errors.confirmPassword && (
+                          <p className="text-xs text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
+                        )}
+                      </div>
+
+                      {/* Terms */}
+                      <div className="space-y-1">
+                        <div className="flex items-start gap-2">
+                          <input
+                            type="checkbox"
+                            id="terms"
+                            className="mt-0.5 w-4 h-4 rounded accent-[#4F46E5] cursor-pointer flex-shrink-0"
+                            {...registerForm.register('terms')}
+                          />
+                          <label htmlFor="terms" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
+                            Acepto los{' '}
+                            <button
+                              type="button"
+                              onClick={() => setTermsOpen(true)}
+                              className="text-[#4F46E5] font-medium hover:underline"
+                            >
+                              términos y condiciones
+                            </button>
+                            {' '}y la{' '}
+                            <button
+                              type="button"
+                              onClick={() => setTermsOpen(true)}
+                              className="text-[#4F46E5] font-medium hover:underline"
+                            >
+                              política de privacidad
+                            </button>
+                          </label>
+                        </div>
+                        {registerForm.formState.errors.terms && (
+                          <p className="text-xs text-red-500">{registerForm.formState.errors.terms.message}</p>
+                        )}
+                      </div>
+
+                      <motion.button
+                        type="submit"
+                        disabled={registerForm.formState.isSubmitting}
+                        whileHover={{ scale: 1.02, y: -1 }}
+                        whileTap={{ scale: 0.97 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                        className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+                        style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
+                      >
+                        {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
+                      </motion.button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
+              </motion.div>
+            )}
+
+            {/* ─── FORGOT PASSWORD ─── */}
+            {view === 'forgot' && (
+              <motion.div
+                key="forgot"
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5"
+              >
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(79,70,229,0.1)' }}>
+                    <KeyRound className="w-5 h-5 text-[#4F46E5]" />
+                  </div>
+                  <div>
+                    <h2 className="font-semibold text-base" style={{ color: 'var(--luka-text-primary)' }}>
+                      Recuperar contraseña
+                    </h2>
+                    <p className="text-xs" style={{ color: 'var(--luka-text-secondary)' }}>
+                      Te enviaremos un enlace a tu correo
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleForgot} noValidate className="space-y-4">
                   <div className="space-y-1">
-                    <Label htmlFor="login-email">Correo electrónico</Label>
+                    <Label htmlFor="forgot-email">Correo electrónico</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                       <Input
-                        id="login-email"
+                        id="forgot-email"
                         type="email"
                         placeholder="tu@email.com"
                         autoComplete="email"
                         className="pl-10 rounded-xl"
-                        {...loginForm.register('email')}
+                        {...forgotForm.register('email')}
                       />
                     </div>
-                    {loginForm.formState.errors.email && (
-                      <p className="text-xs text-red-500">{loginForm.formState.errors.email.message}</p>
+                    {forgotForm.formState.errors.email && (
+                      <p className="text-xs text-red-500">{forgotForm.formState.errors.email.message}</p>
                     )}
                   </div>
-
-                  <div className="space-y-1">
-                    <Label htmlFor="login-password">Contraseña</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input
-                        id="login-password"
-                        type={showPass ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        autoComplete="current-password"
-                        className="pl-10 pr-10 rounded-xl"
-                        {...loginForm.register('password')}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPass(!showPass)}
-                        className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                    {loginForm.formState.errors.password && (
-                      <p className="text-xs text-red-500">{loginForm.formState.errors.password.message}</p>
-                    )}
-                  </div>
-
-                  {bloqueado && (
-                    <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl text-red-600 text-sm">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                      <span>Cuenta bloqueada. Intenta en {countdown}s</span>
-                    </div>
-                  )}
 
                   <motion.button
                     type="submit"
-                    disabled={loginForm.formState.isSubmitting || bloqueado}
+                    disabled={forgotForm.formState.isSubmitting}
                     whileHover={{ scale: 1.02, y: -1 }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
                     style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
                   >
-                    {loginForm.formState.isSubmitting ? 'Ingresando...' : 'Iniciar sesión'}
+                    {forgotForm.formState.isSubmitting ? 'Enviando...' : 'Enviar enlace'}
                   </motion.button>
+
+                  <button
+                    type="button"
+                    onClick={() => setView('auth')}
+                    className="w-full flex items-center justify-center gap-1.5 text-sm py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    style={{ color: 'var(--luka-text-secondary)' }}
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    Volver al inicio de sesión
+                  </button>
                 </form>
-              </TabsContent>
+              </motion.div>
+            )}
 
-              {/* ─── REGISTER ─── */}
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} noValidate className="space-y-4">
-
-                  <div className="space-y-1">
-                    <Label htmlFor="reg-nombre">Nombre completo</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input
-                        id="reg-nombre"
-                        type="text"
-                        placeholder="Tu nombre"
-                        autoComplete="name"
-                        className="pl-10 rounded-xl"
-                        {...registerForm.register('nombre')}
-                      />
-                    </div>
-                    {registerForm.formState.errors.nombre && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.nombre.message}</p>
-                    )}
+            {/* ─── FORGOT SENT ─── */}
+            {view === 'forgot-sent' && (
+              <motion.div
+                key="forgot-sent"
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 text-center space-y-4"
+              >
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.1 }}
+                  className="flex justify-center"
+                >
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: 'rgba(79,70,229,0.1)' }}>
+                    <CheckCircle className="w-8 h-8 text-[#4F46E5]" />
                   </div>
+                </motion.div>
+                <div>
+                  <h2 className="font-semibold text-lg" style={{ color: 'var(--luka-text-primary)' }}>
+                    ¡Correo enviado!
+                  </h2>
+                  <p className="text-sm mt-1" style={{ color: 'var(--luka-text-secondary)' }}>
+                    Revisa tu bandeja de entrada y haz clic en el enlace para crear una nueva contraseña.
+                  </p>
+                </div>
+                <p className="text-xs px-4" style={{ color: 'var(--luka-text-secondary)' }}>
+                  Si no lo ves en unos minutos, revisa tu carpeta de spam.
+                </p>
+                <button
+                  onClick={() => setView('auth')}
+                  className="w-full flex items-center justify-center gap-1.5 text-sm py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors font-medium"
+                  style={{ color: 'var(--luka-text-primary)' }}
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Volver al inicio de sesión
+                </button>
+              </motion.div>
+            )}
 
-                  <div className="space-y-1">
-                    <Label htmlFor="reg-email">Correo electrónico</Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
-                      <Input
-                        id="reg-email"
-                        type="email"
-                        placeholder="tu@email.com"
-                        autoComplete="email"
-                        className="pl-10 rounded-xl"
-                        {...registerForm.register('email')}
-                      />
-                    </div>
-                    {registerForm.formState.errors.email && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.email.message}</p>
-                    )}
+            {/* ─── RESET PASSWORD ─── */}
+            {view === 'reset' && (
+              <motion.div
+                key="reset"
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.22, ease: 'easeInOut' }}
+                className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5"
+              >
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.1)' }}>
+                    <KeyRound className="w-5 h-5 text-green-600" />
                   </div>
+                  <div>
+                    <h2 className="font-semibold text-base" style={{ color: 'var(--luka-text-primary)' }}>
+                      Nueva contraseña
+                    </h2>
+                    <p className="text-xs" style={{ color: 'var(--luka-text-secondary)' }}>
+                      Elige una contraseña segura
+                    </p>
+                  </div>
+                </div>
 
+                <form onSubmit={handleReset} noValidate className="space-y-4">
                   <div className="space-y-1">
-                    <Label htmlFor="reg-password">Contraseña</Label>
+                    <Label htmlFor="reset-password">Nueva contraseña</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                       <Input
-                        id="reg-password"
-                        type={showPass ? 'text' : 'password'}
+                        id="reset-password"
+                        type={showResetPass ? 'text' : 'password'}
                         placeholder="••••••••"
                         autoComplete="new-password"
                         className="pl-10 pr-10 rounded-xl"
-                        {...registerForm.register('password')}
+                        {...resetForm.register('password')}
                       />
                       <button
                         type="button"
-                        onClick={() => setShowPass(!showPass)}
+                        onClick={() => setShowResetPass(!showResetPass)}
                         className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       >
-                        {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showResetPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
-                    <PasswordStrength password={watchPassword} />
-                    {registerForm.formState.errors.password && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.password.message}</p>
+                    <PasswordStrength password={watchResetPassword} />
+                    {resetForm.formState.errors.password && (
+                      <p className="text-xs text-red-500">{resetForm.formState.errors.password.message}</p>
                     )}
                   </div>
 
                   <div className="space-y-1">
-                    <Label htmlFor="reg-confirm">Confirmar contraseña</Label>
+                    <Label htmlFor="reset-confirm">Confirmar contraseña</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
                       <Input
-                        id="reg-confirm"
-                        type={showConfirmPass ? 'text' : 'password'}
+                        id="reset-confirm"
+                        type={showResetConfirm ? 'text' : 'password'}
                         placeholder="••••••••"
                         autoComplete="new-password"
                         className="pl-10 pr-10 rounded-xl"
-                        {...registerForm.register('confirmPassword')}
+                        {...resetForm.register('confirmPassword')}
                       />
                       <button
                         type="button"
-                        onClick={() => setShowConfirmPass(!showConfirmPass)}
+                        onClick={() => setShowResetConfirm(!showResetConfirm)}
                         className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       >
-                        {showConfirmPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showResetConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                       </button>
                     </div>
-                    {registerForm.formState.errors.confirmPassword && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.confirmPassword.message}</p>
-                    )}
-                  </div>
-
-                  {/* Terms */}
-                  <div className="space-y-1">
-                    <div className="flex items-start gap-2">
-                      <input
-                        type="checkbox"
-                        id="terms"
-                        className="mt-0.5 w-4 h-4 rounded accent-[#4F46E5] cursor-pointer flex-shrink-0"
-                        {...registerForm.register('terms')}
-                      />
-                      <label htmlFor="terms" className="text-xs text-gray-500 leading-relaxed cursor-pointer">
-                        Acepto los{' '}
-                        <button
-                          type="button"
-                          onClick={() => setTermsOpen(true)}
-                          className="text-[#4F46E5] font-medium hover:underline"
-                        >
-                          términos y condiciones
-                        </button>
-                        {' '}y la{' '}
-                        <button
-                          type="button"
-                          onClick={() => setTermsOpen(true)}
-                          className="text-[#4F46E5] font-medium hover:underline"
-                        >
-                          política de privacidad
-                        </button>
-                      </label>
-                    </div>
-                    {registerForm.formState.errors.terms && (
-                      <p className="text-xs text-red-500">{registerForm.formState.errors.terms.message}</p>
+                    {resetForm.formState.errors.confirmPassword && (
+                      <p className="text-xs text-red-500">{resetForm.formState.errors.confirmPassword.message}</p>
                     )}
                   </div>
 
                   <motion.button
                     type="submit"
-                    disabled={registerForm.formState.isSubmitting}
+                    disabled={resetForm.formState.isSubmitting}
                     whileHover={{ scale: 1.02, y: -1 }}
                     whileTap={{ scale: 0.97 }}
                     transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                     className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
                     style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)' }}
                   >
-                    {registerForm.formState.isSubmitting ? 'Creando cuenta...' : 'Crear mi cuenta'}
+                    {resetForm.formState.isSubmitting ? 'Actualizando...' : 'Guardar nueva contraseña'}
                   </motion.button>
                 </form>
-              </TabsContent>
-            </Tabs>
-          </div>
+              </motion.div>
+            )}
+
+          </AnimatePresence>
         </motion.div>
       </div>
 
