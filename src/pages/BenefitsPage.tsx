@@ -35,7 +35,12 @@ const scaleIn = {
   show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
 }
 
-function BenefitCard({ benefit, index }: { benefit: Benefit; index: number }) {
+const cardVariants = {
+  hidden: { opacity: 0, y: 20, scale: 0.95 },
+  show:   { opacity: 1, y: 0,  scale: 1,   transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
+}
+
+function BenefitCard({ benefit }: { benefit: Benefit }) {
   const [copied, setCopied]   = useState(false)
   const proximoVencer          = getBeneficioProximoAExpirar(benefit.fecha_expiracion)
 
@@ -58,9 +63,7 @@ function BenefitCard({ benefit, index }: { benefit: Benefit; index: number }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: index * 0.05 }}
+      variants={cardVariants}
       whileHover={{ y: -4, boxShadow: `0 12px 32px ${benefit.color}22` }}
     >
       <Card className="p-5 rounded-2xl shadow-md relative overflow-hidden">
@@ -167,7 +170,7 @@ export function BenefitsPage() {
       </motion.div>
 
       {/* Stats card */}
-      <motion.div variants={scaleIn}>
+      <motion.div variants={scaleIn} initial="hidden" animate="show">
         <motion.div
           whileHover={{ scale: 1.01, y: -2 }}
           transition={{ duration: 0.2 }}
@@ -200,8 +203,6 @@ export function BenefitsPage() {
       >
         <motion.div
           className="flex gap-2"
-          initial="hidden"
-          animate="show"
           variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
         >
           {CATEGORIAS_BENEFICIO.map(({ value, label }) => {
@@ -240,7 +241,7 @@ export function BenefitsPage() {
 
       {/* Grid de beneficios */}
       {error ? (
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} initial="hidden" animate="show">
           <Card className="rounded-2xl shadow-md p-6 flex flex-col items-center gap-3 text-center">
             <AlertCircle className="w-10 h-10 text-red-400" />
             <p className="font-medium" style={{ color: 'var(--luka-text-primary)' }}>No se pudieron cargar los beneficios</p>
@@ -258,24 +259,24 @@ export function BenefitsPage() {
           </Card>
         </motion.div>
       ) : loading ? (
-        <motion.div variants={fadeUp} className="space-y-4">
+        <motion.div variants={fadeUp} initial="hidden" animate="show" className="space-y-4">
           {[1, 2, 3].map((i) => <Skeleton key={i} className="h-48 w-full rounded-2xl" />)}
         </motion.div>
       ) : benefits.length === 0 ? (
-        <motion.div variants={fadeUp}>
+        <motion.div variants={fadeUp} initial="hidden" animate="show">
           <Card className="rounded-2xl shadow-md">
             <EmptyState emoji="🎁" title="Sin beneficios en esta categoría" description="Prueba con otra categoría." />
           </Card>
         </motion.div>
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+          initial="hidden"
+          animate="show"
           className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0"
         >
-          {benefits.map((benefit, i) => (
-            <BenefitCard key={benefit.id} benefit={benefit} index={i} />
+          {benefits.map((benefit) => (
+            <BenefitCard key={benefit.id} benefit={benefit} />
           ))}
         </motion.div>
       )}

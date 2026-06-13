@@ -5,14 +5,18 @@ import type { Goal } from '@/types/database'
 import type { GoalFormData } from '@/lib/validations/goal'
 
 export function useGoals() {
-  const { user } = useAuthContext()
+  const { user, loading: authLoading } = useAuthContext()
   const [goals, setGoals] = useState<Goal[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
   useEffect(() => {
+    // Wait for auth to resolve before making any decision
+    if (authLoading) return
+
     if (!user) {
+      setGoals([])
       setLoading(false)
       return
     }
@@ -27,7 +31,7 @@ export function useGoals() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [user, retryCount])
+  }, [user?.id, authLoading, retryCount])
 
   const addGoal = useCallback(async (data: GoalFormData): Promise<Goal> => {
     if (!user) throw new Error('No autenticado')
