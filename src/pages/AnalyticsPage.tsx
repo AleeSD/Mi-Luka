@@ -7,6 +7,7 @@ import {
 import { format, startOfWeek, addDays, startOfMonth, endOfMonth, subMonths } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { motion } from 'motion/react'
+import { isMobile, fadeUp } from '@/lib/motion-utils'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -21,10 +22,34 @@ const pageVariants = {
   show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+// fadeUp from motion-utils: desktop = fade+translate, mobile = fade-only
+
+const EASE = [0.22, 1, 0.36, 1] as [number, number, number, number]
+
+// Factory helpers for inline motion props — mobile strips y/scale displacement
+const groupAnim = (duration: number) => isMobile
+  ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration } }
+  : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, transition: { duration, ease: EASE } }
+
+const sectionAnim = (duration: number) => isMobile
+  ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration } }
+  : { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration, ease: EASE } }
+
+const chartCardAnim = (delay = 0) => isMobile
+  ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.35, delay } }
+  : { initial: { opacity: 0, scale: 0.95, y: 10 }, animate: { opacity: 1, scale: 1, y: 0 }, transition: { duration: 0.4, ease: EASE, delay } }
+
+const statCardAnim = (i: number) => isMobile
+  ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.28, delay: i * 0.08 } }
+  : { initial: { opacity: 0, scale: 0.9, y: 8 }, animate: { opacity: 1, scale: 1, y: 0 }, transition: { type: 'spring' as const, stiffness: 260, damping: 20, delay: i * 0.08 } }
+
+const desgloseItemVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.28 } } }
+  : { hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.28 } } }
+
+const pieLegendVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.25 } } }
+  : { hidden: { opacity: 0, x: 10 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }
 
 export function AnalyticsPage() {
   const { expenses, loading } = useExpenses()
@@ -149,9 +174,7 @@ export function AnalyticsPage() {
         </motion.div>
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          {...groupAnim(0.3)}
           className="grid grid-cols-2 lg:grid-cols-3 gap-3"
         >
           {[
@@ -180,11 +203,10 @@ export function AnalyticsPage() {
           ].map(({ label, main, sub, colSpan = '' }, i) => (
             <motion.div
               key={label}
-              initial={{ opacity: 0, scale: 0.9, y: 8 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ type: 'spring', stiffness: 260, damping: 20, delay: i * 0.08 }}
+              {...statCardAnim(i)}
               whileHover={{ y: -2 }}
               className={colSpan}
+              style={{ isolation: 'isolate', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
             >
               <Card className="p-4 rounded-2xl shadow-sm h-full">
                 <p className="text-xs mb-1" style={{ color: 'var(--luka-text-secondary)' }}>{label}</p>
@@ -203,9 +225,7 @@ export function AnalyticsPage() {
         </motion.div>
       ) : gastosFiltrados.length === 0 ? (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          {...sectionAnim(0.36)}
         >
           <Card className="p-6 rounded-2xl shadow-md">
             <EmptyState emoji="📊" title="Sin datos en este período" description="Agrega gastos para ver tus estadísticas aquí." />
@@ -213,15 +233,11 @@ export function AnalyticsPage() {
         </motion.div>
       ) : (
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          {...groupAnim(0.3)}
           className="lg:grid lg:grid-cols-2 lg:gap-4 space-y-4 lg:space-y-0"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+            {...chartCardAnim()}
             whileHover={{ y: -2 }}
           >
             <Card className="p-5 rounded-2xl shadow-md">
@@ -247,9 +263,7 @@ export function AnalyticsPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number], delay: 0.1 }}
+            {...chartCardAnim(0.1)}
             whileHover={{ y: -2 }}
           >
             <Card className="p-5 rounded-2xl shadow-md">
@@ -276,7 +290,7 @@ export function AnalyticsPage() {
                     return (
                       <motion.div
                         key={item.name}
-                        variants={{ hidden: { opacity: 0, x: 10 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }}
+                        variants={pieLegendVariant}
                         className="flex items-center gap-2"
                       >
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: item.color }} />
@@ -297,9 +311,7 @@ export function AnalyticsPage() {
       {/* Desglose detallado */}
       {!loading && porCategoria.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
+          {...sectionAnim(0.36)}
         >
           <Card className="p-5 rounded-2xl shadow-md">
             <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--luka-text-primary)' }}>Desglose detallado</h3>
@@ -314,7 +326,7 @@ export function AnalyticsPage() {
                 return (
                   <motion.div
                     key={cat.name}
-                    variants={{ hidden: { opacity: 0, x: -10 }, show: { opacity: 1, x: 0, transition: { duration: 0.28 } } }}
+                    variants={desgloseItemVariant}
                     className="space-y-1"
                   >
                     <div className="flex items-center justify-between">

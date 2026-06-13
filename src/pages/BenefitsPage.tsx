@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { Gift, ExternalLink, Copy, Check, AlertCircle } from 'lucide-react'
 import { motion } from 'motion/react'
+import { isMobile, fadeUp, scaleIn } from '@/lib/motion-utils'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -25,20 +26,15 @@ const pageVariants = {
   show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+// fadeUp + scaleIn from motion-utils: desktop = full animation, mobile = fade-only
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+const cardVariants = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.32 } } }
+  : { hidden: { opacity: 0, y: 20, scale: 0.95 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } } }
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 20, scale: 0.95 },
-  show:   { opacity: 1, y: 0,  scale: 1,   transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+const filterChipVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.22 } } }
+  : { hidden: { opacity: 0, scale: 0.85 }, show: { opacity: 1, scale: 1, transition: { duration: 0.22 } } }
 
 function BenefitCard({ benefit }: { benefit: Benefit }) {
   const [copied, setCopied]   = useState(false)
@@ -183,7 +179,7 @@ export function BenefitsPage() {
               <div className="flex items-center gap-2 mb-2">
                 <motion.div
                   animate={{ rotate: [0, 10, -8, 0] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                  transition={{ duration: 4, repeat: Infinity, repeatDelay: 8, ease: 'easeInOut', delay: 1 }}
                 >
                   <Gift className="w-5 h-5 text-white" />
                 </motion.div>
@@ -211,10 +207,7 @@ export function BenefitsPage() {
               <motion.button
                 key={value}
                 onClick={() => handleFiltro(value)}
-                variants={{
-                  hidden: { opacity: 0, scale: 0.85 },
-                  show:   { opacity: 1, scale: 1, transition: { duration: 0.22 } },
-                }}
+                variants={filterChipVariant}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 17 }}

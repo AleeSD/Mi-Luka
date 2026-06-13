@@ -1,5 +1,6 @@
 ﻿import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router'
+import { supportsHover, isMobile, fadeUp, scaleIn } from '@/lib/motion-utils'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -34,15 +35,15 @@ const pageVariants = {
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+// fadeUp + scaleIn from motion-utils: desktop = full animation, mobile = fade-only
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+const statCardVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.28 } } }
+  : { hidden: { opacity: 0, scale: 0.82, y: 10 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 20 } } }
+
+const settingsItemVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.26 } } }
+  : { hidden: { opacity: 0, x: 12 }, show: { opacity: 1, x: 0, transition: { duration: 0.26 } } }
 
 export function ProfilePage() {
   const navigate = useNavigate()
@@ -235,10 +236,7 @@ export function ProfilePage() {
         {stats.map(({ label, value, icon: Icon, color }) => (
           <motion.div
             key={label}
-            variants={{
-              hidden: { opacity: 0, scale: 0.82, y: 10 },
-              show:   { opacity: 1, scale: 1,    y: 0,  transition: { type: 'spring', stiffness: 260, damping: 20 } },
-            }}
+            variants={statCardVariant}
             whileHover={{ y: -3, boxShadow: `0 8px 24px ${color}22` }}
             transition={{ duration: 0.18 }}
           >
@@ -262,16 +260,15 @@ export function ProfilePage() {
             initial="hidden"
             animate="show"
             variants={{ hidden: {}, show: { transition: { staggerChildren: 0.07 } } }}
+            style={{ isolation: 'isolate' }}
           >
             {settingsItems.map(({ label, icon: Icon, onClick }) => (
               <motion.button
                 key={label}
                 onClick={onClick}
-                variants={{
-                  hidden: { opacity: 0, x: 12 },
-                  show:   { opacity: 1, x: 0,  transition: { duration: 0.26 } },
-                }}
-                whileHover={{ x: 4, backgroundColor: 'rgba(79,70,229,0.04)' }}
+                style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+                variants={settingsItemVariant}
+                whileHover={supportsHover ? { x: 4, backgroundColor: 'rgba(79,70,229,0.04)' } : undefined}
                 whileTap={{ scale: 0.99 }}
                 transition={{ duration: 0.15 }}
                 className="w-full flex items-center justify-between p-3 rounded-xl"
@@ -291,6 +288,7 @@ export function ProfilePage() {
                 show:   { opacity: 1, x: 0, transition: { duration: 0.26 } },
               }}
               className="flex items-center justify-between p-3 rounded-xl"
+              style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
             >
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 flex items-center justify-center">🌙</div>

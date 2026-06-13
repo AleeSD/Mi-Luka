@@ -22,6 +22,7 @@ export function MainLayout() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-[var(--luka-surface)] dark:bg-gray-950">
 
       {/* ─── DESKTOP SIDEBAR (lg+) ─── */}
@@ -121,77 +122,81 @@ export function MainLayout() {
         </div>
       </main>
 
-      {/* ─── MOBILE BOTTOM NAV (< lg) ─── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg z-50 safe-bottom">
-        <div className="max-w-md mx-auto px-2">
-          <div className="flex justify-around items-center py-2">
-            {navItems.map((item) => {
-              const active = isActive(item.path)
-              const Icon   = item.icon
+    </div>
 
-              if (item.isSpecial) {
-                return (
-                  <button
-                    key={item.path}
-                    onClick={() => navigate(item.path)}
-                    className="flex flex-col items-center justify-center -mt-5"
-                    aria-label="Agregar gasto"
-                  >
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.88 }}
-                      transition={{ type: 'spring', stiffness: 420, damping: 17 }}
-                      className="relative"
-                    >
-                      {/* Pulse ring */}
-                      <div
-                        className="absolute inset-0 rounded-2xl luka-pulse-ring"
-                        style={{ background: 'rgba(79,70,229,0.28)' }}
-                      />
-                      <div
-                        className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg relative z-10"
-                        style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
-                      >
-                        <Icon className="w-7 h-7 text-white" />
-                      </div>
-                    </motion.div>
-                    <span className="text-xs mt-1" style={{ color: 'var(--luka-text-secondary)' }}>
-                      {item.label}
-                    </span>
-                  </button>
-                )
-              }
+    {/* ─── MOBILE BOTTOM NAV (< lg) ───
+        Rendered OUTSIDE the layout div so no ancestor can ever have transform/contain/will-change
+        that would turn this fixed element's containing block from the viewport to a parent box. */}
+    <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 shadow-lg z-50 safe-bottom">
+      <div className="max-w-md mx-auto px-2">
+        <div className="flex justify-around items-center py-2">
+          {navItems.map((item) => {
+            const active = isActive(item.path)
+            const Icon   = item.icon
 
+            if (item.isSpecial) {
               return (
                 <button
                   key={item.path}
                   onClick={() => navigate(item.path)}
-                  className="flex flex-col items-center justify-center py-2 px-3 rounded-xl min-w-[44px] min-h-[44px] relative"
-                  style={{ color: active ? 'var(--luka-blue)' : 'var(--luka-text-secondary)' }}
-                  aria-label={item.label}
+                  className="flex flex-col items-center justify-center -mt-5"
+                  aria-label="Agregar gasto"
                 >
-                  {active && (
-                    <motion.span
-                      layoutId="mobile-indicator"
-                      className="absolute inset-0 rounded-xl"
-                      style={{ background: 'rgba(79,70,229,0.08)' }}
-                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                    />
-                  )}
                   <motion.div
-                    animate={{ scale: active ? 1.15 : 1 }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-                    className="relative z-10"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.88 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 17 }}
+                    className="relative overflow-hidden rounded-2xl"
                   >
-                    <Icon className="w-6 h-6" />
+                    {/* Pulse ring — overflow-hidden clips the scaled layer to button bounds */}
+                    <div
+                      className="absolute inset-0 rounded-2xl luka-pulse-ring"
+                      style={{ background: 'rgba(79,70,229,0.28)', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+                    />
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg relative z-10"
+                      style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #8B5CF6 100%)' }}
+                    >
+                      <Icon className="w-7 h-7 text-white" />
+                    </div>
                   </motion.div>
-                  <span className="text-xs mt-1 relative z-10">{item.label}</span>
+                  <span className="text-xs mt-1" style={{ color: 'var(--luka-text-secondary)' }}>
+                    {item.label}
+                  </span>
                 </button>
               )
-            })}
-          </div>
+            }
+
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="flex flex-col items-center justify-center py-2 px-3 rounded-xl min-w-[44px] min-h-[44px] relative"
+                style={{ color: active ? 'var(--luka-blue)' : 'var(--luka-text-secondary)' }}
+                aria-label={item.label}
+              >
+                {active && (
+                  <motion.span
+                    layoutId="mobile-indicator"
+                    className="absolute inset-0 rounded-xl"
+                    style={{ background: 'rgba(79,70,229,0.08)' }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                  />
+                )}
+                <motion.div
+                  animate={{ scale: active ? 1.15 : 1 }}
+                  transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+                  className="relative z-10"
+                >
+                  <Icon className="w-6 h-6" />
+                </motion.div>
+                <span className="text-xs mt-1 relative z-10">{item.label}</span>
+              </button>
+            )
+          })}
         </div>
-      </nav>
-    </div>
+      </div>
+    </nav>
+    </>
   )
 }

@@ -182,8 +182,8 @@
   50%       { transform: translateY(-20px) scale(1.03); }
 }
 @keyframes luka-pulse-ring {
-  0%   { transform: scale(0.95); opacity: 0.55; }
-  100% { transform: scale(1.7);  opacity: 0;   }
+  0%   { transform: scale(1);    opacity: 0.5; }
+  100% { transform: scale(1.45); opacity: 0;   }
 }
 @keyframes luka-gradient-pan {
   0%, 100% { background-position: 0% 50%; }
@@ -202,4 +202,13 @@
 .luka-gradient-animated {
   background-size: 300% 300%;
   animation: luka-gradient-pan 7s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .luka-float,
+  .luka-float-slow,
+  .luka-pulse-ring,
+  .luka-gradient-animated {
+    animation: none;
+  }
 }

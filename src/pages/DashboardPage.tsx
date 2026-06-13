@@ -2,6 +2,7 @@
 import { PlusCircle, Target, Sparkles, TrendingDown, TrendingUp, RefreshCw, Trophy, Gift } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { motion } from 'motion/react'
+import { supportsHover, isMobile, fadeUp, scaleIn } from '@/lib/motion-utils'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
@@ -19,15 +20,27 @@ const pageVariants = {
   show: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 18 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+// fadeUp + scaleIn from motion-utils: desktop = full animation, mobile = fade-only
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95, y: 14 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+const quickActionVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.28 } } }
+  : { hidden: { opacity: 0, scale: 0.72, y: 10 }, show: { opacity: 1, scale: 1, y: 0, transition: { type: 'spring' as const, stiffness: 260, damping: 20 } } }
+
+const goalItemVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.28 } } }
+  : { hidden: { opacity: 0, x: 18 }, show: { opacity: 1, x: 0, transition: { duration: 0.32, ease: 'easeOut' as const } } }
+
+const pieLegendVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.25 } } }
+  : { hidden: { opacity: 0, x: 12 }, show: { opacity: 1, x: 0, transition: { duration: 0.25 } } }
+
+const expenseItemVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.28 } } }
+  : { hidden: { opacity: 0, x: -14 }, show: { opacity: 1, x: 0, transition: { duration: 0.28, ease: 'easeOut' as const } } }
+
+const quickCardVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.32 } } }
+  : { hidden: { opacity: 0, scale: 0.88, y: 14 }, show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } } }
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -111,13 +124,13 @@ export function DashboardPage() {
                   {formatCurrency(totalMes)}
                 </h2>
                 <div className="flex gap-3">
-                  <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <div className="flex-1 bg-white/20 rounded-xl p-3">
                     <p className="text-white/80 text-xs flex items-center gap-1">
                       <TrendingDown className="w-3 h-3" /> Gastos
                     </p>
                     <p className="text-white text-lg font-semibold">{formatCurrency(totalMes)}</p>
                   </div>
-                  <div className="flex-1 bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <div className="flex-1 bg-white/20 rounded-xl p-3">
                     <p className="text-white/80 text-xs flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" /> Ahorrado
                     </p>
@@ -145,10 +158,7 @@ export function DashboardPage() {
           <motion.button
             key={path}
             onClick={() => navigate(path)}
-            variants={{
-              hidden: { opacity: 0, scale: 0.72, y: 10 },
-              show:   { opacity: 1, scale: 1,    y: 0,  transition: { type: 'spring', stiffness: 260, damping: 20 } },
-            }}
+            variants={quickActionVariant}
             whileHover={{ scale: 1.07, y: -3, boxShadow: '0 10px 28px rgba(0,0,0,0.26)' }}
             whileTap={{ scale: 0.93 }}
             className="flex flex-col items-center gap-2 py-4 rounded-xl text-white font-medium"
@@ -182,10 +192,7 @@ export function DashboardPage() {
               return (
                 <motion.div
                   key={goal.id}
-                  variants={{
-                    hidden: { opacity: 0, x: 18 },
-                    show:   { opacity: 1, x: 0,  transition: { duration: 0.32, ease: 'easeOut' } },
-                  }}
+                  variants={goalItemVariant}
                   whileHover={{ scale: 1.01 }}
                   transition={{ duration: 0.18 }}
                   className="mb-3"
@@ -236,10 +243,7 @@ export function DashboardPage() {
                 {porCategoria.slice(0, 5).map((item) => (
                   <motion.div
                     key={item.name}
-                    variants={{
-                      hidden: { opacity: 0, x: 12 },
-                      show:   { opacity: 1, x: 0,  transition: { duration: 0.25 } },
-                    }}
+                    variants={pieLegendVariant}
                     className="flex items-center gap-2"
                   >
                     <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
@@ -297,16 +301,15 @@ export function DashboardPage() {
               initial="hidden"
               animate="show"
               variants={{ hidden: {}, show: { transition: { staggerChildren: 0.06 } } }}
+              style={{ isolation: 'isolate' }}
             >
               {recentExpenses.map((expense) => (
                 <motion.button
                   key={expense.id}
                   onClick={() => navigate(`/app/add-expense/${expense.id}`)}
-                  variants={{
-                    hidden: { opacity: 0, x: -14 },
-                    show:   { opacity: 1, x: 0,   transition: { duration: 0.28, ease: 'easeOut' } },
-                  }}
-                  whileHover={{ x: 4, backgroundColor: 'rgba(79,70,229,0.045)' }}
+                  style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+                  variants={expenseItemVariant}
+                  whileHover={supportsHover ? { x: 4, backgroundColor: 'rgba(79,70,229,0.045)' } : undefined}
                   whileTap={{ scale: 0.99 }}
                   transition={{ duration: 0.15 }}
                   className="w-full flex items-center gap-3 rounded-xl p-2 -mx-2"
@@ -336,10 +339,7 @@ export function DashboardPage() {
         className="grid grid-cols-2 gap-3"
       >
         <motion.div
-          variants={{
-            hidden: { opacity: 0, scale: 0.88, y: 14 },
-            show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-          }}
+          variants={quickCardVariant}
           whileHover={{ y: -5, boxShadow: '0 14px 36px rgba(139,92,246,0.2)' }}
           transition={{ duration: 0.2 }}
         >
@@ -358,10 +358,7 @@ export function DashboardPage() {
         </motion.div>
 
         <motion.div
-          variants={{
-            hidden: { opacity: 0, scale: 0.88, y: 14 },
-            show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-          }}
+          variants={quickCardVariant}
           whileHover={{ y: -5, boxShadow: '0 14px 36px rgba(245,158,11,0.2)' }}
           transition={{ duration: 0.2 }}
         >

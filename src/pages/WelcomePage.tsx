@@ -74,7 +74,7 @@ export function WelcomePage() {
                 <motion.div
                   whileHover={{ scale: 1.2, rotate: 8 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 10 }}
-                  className="w-8 h-8 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0"
+                  className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0"
                 >
                   <Icon className="w-4 h-4" />
                 </motion.div>
@@ -126,7 +126,8 @@ export function WelcomePage() {
           transition={{ delay: 0.3, duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] }}
           className="relative z-10 text-center text-white space-y-6"
         >
-          {/* Floating icon box */}
+          {/* Floating icon box — backdrop-blur-lg is desktop-only (hidden lg:flex parent).
+               If this panel ever becomes responsive, replace backdrop-blur-lg with bg-white/30 to avoid mobile GPU artifact. */}
           <motion.div
             animate={{ y: [0, -12, 0] }}
             transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}

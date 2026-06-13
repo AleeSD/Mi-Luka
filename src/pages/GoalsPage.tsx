@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Calendar, TrendingUp, ChevronDown, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
+import { isMobile, fadeUp, scaleIn } from '@/lib/motion-utils'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 import { Card } from '@/components/ui/card'
@@ -24,20 +25,11 @@ const pageVariants = {
   show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+// fadeUp + scaleIn from motion-utils: desktop = full animation, mobile = fade-only
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
-
-const goalCardVariants = {
-  hidden: { opacity: 0, x: 20, y: 6 },
-  show:   { opacity: 1, x: 0,  y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+const goalCardVariants = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.32 } } }
+  : { hidden: { opacity: 0, x: 20, y: 6 }, show: { opacity: 1, x: 0, y: 0, transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } } }
 
 export function GoalsPage() {
   const { goalsActivas, goalsCompletadas, loading, addGoal, contribuir, removeGoal } = useGoals()
@@ -139,7 +131,7 @@ export function GoalsPage() {
               </div>
               <motion.div
                 animate={{ rotate: [0, 8, -5, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+                transition={{ duration: 4, repeat: Infinity, repeatDelay: 8, ease: 'easeInOut', delay: 1 }}
                 className="absolute bottom-0 right-0 text-7xl opacity-10 select-none"
               >
                 🎯
@@ -291,8 +283,8 @@ export function GoalsPage() {
                 {goalsCompletadas.map((goal, i) => (
                   <motion.div
                     key={goal.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
+                    initial={isMobile ? { opacity: 0 } : { opacity: 0, x: -10 }}
+                    animate={isMobile ? { opacity: 1 } : { opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.06, duration: 0.25 }}
                   >
                     <Card className="p-4 rounded-2xl shadow-sm border-2 border-green-200 bg-green-50 dark:bg-green-950/20">

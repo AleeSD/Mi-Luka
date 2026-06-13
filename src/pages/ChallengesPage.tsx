@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react'
 import { Trophy, Award, Zap, Star, Crown, Target, Flame, Check } from 'lucide-react'
 import { motion } from 'motion/react'
+import { isMobile, fadeUp, scaleIn } from '@/lib/motion-utils'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
 import { Card } from '@/components/ui/card'
@@ -31,15 +32,15 @@ const pageVariants = {
   show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+// fadeUp + scaleIn from motion-utils: desktop = full animation, mobile = fade-only
 
-const scaleIn = {
-  hidden: { opacity: 0, scale: 0.94, y: 10 },
-  show:   { opacity: 1, scale: 1,    y: 0,  transition: { duration: 0.42, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+const challengeItemVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.28 } } }
+  : { hidden: { opacity: 0, y: 12, scale: 0.97 }, show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } } }
+
+const completadoItemVariant = isMobile
+  ? { hidden: { opacity: 0 }, show: { opacity: 1, transition: { duration: 0.28 } } }
+  : { hidden: { opacity: 0, scale: 0.92 }, show: { opacity: 1, scale: 1, transition: { duration: 0.3 } } }
 
 export function ChallengesPage() {
   const { disponibles, enCurso, completados, loading, acceptChallenge, completeChallenge } = useChallenges()
@@ -105,7 +106,7 @@ export function ChallengesPage() {
                 <motion.div
                   animate={{ rotate: [0, -12, 12, -6, 6, 0] }}
                   transition={{ duration: 2.5, delay: 0.8, repeat: Infinity, repeatDelay: 5, ease: 'easeInOut' }}
-                  className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center"
+                  className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center"
                 >
                   <Trophy className="w-7 h-7 text-white" />
                 </motion.div>
@@ -128,7 +129,7 @@ export function ChallengesPage() {
             </div>
             <motion.div
               animate={{ rotate: [0, 5, -5, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              transition={{ duration: 6, repeat: Infinity, repeatDelay: 8, ease: 'easeInOut' }}
               className="absolute top-0 right-0 text-8xl opacity-10 select-none"
             >
               🏆
@@ -170,10 +171,7 @@ export function ChallengesPage() {
                 return (
                   <motion.div
                     key={challenge.id}
-                    variants={{
-                      hidden: { opacity: 0, y: 12, scale: 0.97 },
-                      show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-                    }}
+                    variants={challengeItemVariant}
                     whileHover={{ y: -2 }}
                     transition={{ duration: 0.18 }}
                   >
@@ -244,10 +242,7 @@ export function ChallengesPage() {
                 return (
                   <motion.div
                     key={uc.id}
-                    variants={{
-                      hidden: { opacity: 0, y: 12, scale: 0.97 },
-                      show:   { opacity: 1, y: 0,  scale: 1,    transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-                    }}
+                    variants={challengeItemVariant}
                     whileHover={{ y: -2 }}
                     transition={{ duration: 0.18 }}
                   >
@@ -318,10 +313,7 @@ export function ChallengesPage() {
                 return (
                   <motion.div
                     key={uc.id}
-                    variants={{
-                      hidden: { opacity: 0, scale: 0.92 },
-                      show:   { opacity: 1, scale: 1, transition: { duration: 0.3 } },
-                    }}
+                    variants={completadoItemVariant}
                     whileHover={{ scale: 1.01 }}
                     transition={{ duration: 0.15 }}
                   >
