@@ -6,6 +6,7 @@ import { ArrowLeft, ShoppingBag, Car, Film, BookOpen, Tag, Heart, Zap, Package }
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
 import confetti from 'canvas-confetti'
+import { fadeUp } from '@/lib/motion-utils'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,7 +15,12 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { expenseSchema } from '@/lib/validations/expense'
 import type { ExpenseFormData } from '@/lib/validations/expense'
 import { useExpenses } from '@/hooks/useExpenses'
+import { useSaldo } from '@/hooks/useSaldo'
+import { useLukaNotification } from '@/hooks/useLukaNotification'
+import { useSaldoEditor } from '@/context/SaldoEditorContext'
 import { getExpenseById } from '@/lib/db/expenses'
+import { SaldoInsuficienteError, SaldoNoConfiguradoError } from '@/lib/db/balance'
+import { mensajeBloqueoDinamico, pickRandom, BANCO_A_GASTO_BLOQUEADO } from '@/lib/mensajes'
 import { CATEGORIAS, sanitizeText } from '@/lib/utils'
 import type { CategoriaGasto } from '@/types/database'
 
@@ -28,16 +34,16 @@ const pageVariants = {
   show: { transition: { staggerChildren: 0.08, delayChildren: 0.04 } },
 }
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] } },
-}
+// fadeUp from motion-utils: desktop = fade+translate, mobile = fade-only
 
 export function AddExpensePage() {
   const navigate    = useNavigate()
   const { id }      = useParams<{ id?: string }>()
   const isEditing   = Boolean(id)
   const { addExpense, editExpense, expenses } = useExpenses()
+  const { saldoDisponible } = useSaldo()
+  const { notify } = useLukaNotification()
+  const { open: openSaldoEditor } = useSaldoEditor()
   const [loadingEdit, setLoadingEdit] = useState(false)
 
   const {
@@ -89,7 +95,26 @@ export function AddExpensePage() {
       }
       navigate('/app')
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Error al guardar el gasto')
+      if (e instanceof SaldoInsuficienteError) {
+        const msg = mensajeBloqueoDinamico(saldoDisponible, data.monto)
+        notify({
+          variant: 'bloqueo',
+          title: msg.title,
+          subtitle: msg.subtitle,
+          cta: { label: 'Actualizar saldo', onClick: openSaldoEditor },
+        })
+      } else if (e instanceof SaldoNoConfiguradoError) {
+        const msg = pickRandom(BANCO_A_GASTO_BLOQUEADO)
+        notify({
+          variant: 'bloqueo',
+          title: msg.title,
+          subtitle: msg.subtitle,
+          cta: { label: 'Actualizar saldo', onClick: openSaldoEditor },
+        })
+      } else {
+        console.error('[AddExpensePage] submit error:', e)
+        toast.error(e instanceof Error ? e.message : 'Error al guardar el gasto')
+      }
     }
   })
 
@@ -115,6 +140,7 @@ export function AddExpensePage() {
         <motion.button
           type="button"
           onClick={() => navigate(-1)}
+          aria-label="Volver"
           whileHover={{ scale: 1.1, x: -2 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: 'spring', stiffness: 420, damping: 17 }}

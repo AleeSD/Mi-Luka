@@ -1,8 +1,12 @@
-// @ts-nocheck
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+// @ts-ignore – 'path' is a Node built-in; @types/node is not in devDeps but
+// Vite evaluates config files in a Node context where this module is available.
 import { resolve } from 'path'
+
+// Vite injects __dirname into config files even in ESM ("type":"module") projects.
+declare const __dirname: string
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],

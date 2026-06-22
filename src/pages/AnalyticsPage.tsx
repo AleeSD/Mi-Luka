@@ -210,7 +210,7 @@ export function AnalyticsPage() {
             >
               <Card className="p-4 rounded-2xl shadow-sm h-full">
                 <p className="text-xs mb-1" style={{ color: 'var(--luka-text-secondary)' }}>{label}</p>
-                <p className="text-xl font-bold" style={{ color: 'var(--luka-text-primary)' }}>{main}</p>
+                <p className="text-xl font-bold break-all" style={{ color: 'var(--luka-text-primary)' }}>{main}</p>
                 {sub}
               </Card>
             </motion.div>

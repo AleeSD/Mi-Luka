@@ -219,7 +219,7 @@ export function AuthPage() {
   const handleRegister = registerForm.handleSubmit(async (data) => {
     try {
       await signUp(data.email, data.password, data.nombre)
-      toast.success('¡Cuenta creada! Revisa tu email para confirmarla.', { duration: 6000 })
+      toast.success('¡Bienvenido a Mi Luka!')
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Error al crear la cuenta')
     }
@@ -366,6 +366,7 @@ export function AuthPage() {
                           <button
                             type="button"
                             onClick={() => setShowPass(!showPass)}
+                            aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                             className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                           >
                             {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -452,6 +453,7 @@ export function AuthPage() {
                           <button
                             type="button"
                             onClick={() => setShowPass(!showPass)}
+                            aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                             className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                           >
                             {showPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -478,6 +480,7 @@ export function AuthPage() {
                           <button
                             type="button"
                             onClick={() => setShowConfirmPass(!showConfirmPass)}
+                            aria-label={showConfirmPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                             className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                           >
                             {showConfirmPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -691,6 +694,7 @@ export function AuthPage() {
                       <button
                         type="button"
                         onClick={() => setShowResetPass(!showResetPass)}
+                        aria-label={showResetPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                         className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       >
                         {showResetPass ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -717,6 +721,7 @@ export function AuthPage() {
                       <button
                         type="button"
                         onClick={() => setShowResetConfirm(!showResetConfirm)}
+                        aria-label={showResetConfirm ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                         className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       >
                         {showResetConfirm ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}

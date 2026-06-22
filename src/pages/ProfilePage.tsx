@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
-  User, LogOut, Edit, Award, Wallet, Target, Trophy, TrendingUp,
-  ChevronRight, Settings, Download, Camera,
+  User, LogOut, Edit, Award, Wallet, Target, Trophy,
+  ChevronRight, ChevronDown, Flame, Settings, Download, Camera,
 } from 'lucide-react'
 import { motion } from 'motion/react'
 import { toast } from 'sonner'
@@ -24,6 +24,10 @@ import { useTheme } from '@/context/ThemeContext'
 import { useExpenses } from '@/hooks/useExpenses'
 import { useGoals } from '@/hooks/useGoals'
 import { useChallenges } from '@/hooks/useChallenges'
+import { useRacha } from '@/hooks/useRacha'
+import { useAchievements } from '@/hooks/useAchievements'
+import { RecompensaItem } from '@/components/shared/RecompensaItem'
+import { progresoNivel } from '@/lib/leveling'
 
 const editProfileSchema = z.object({
   nombre: z.string().min(2, 'Mínimo 2 caracteres').max(50, 'Máximo 50 caracteres'),
@@ -53,7 +57,10 @@ export function ProfilePage() {
   const { expenses }                               = useExpenses()
   const { goalsCompletadas }                       = useGoals()
   const { completados }                            = useChallenges()
+  const { rachaEfectiva, rachaMasLarga }           = useRacha()
+  const { items: recompensas, desbloqueadasCount } = useAchievements()
   const [editOpen, setEditOpen]                    = useState(false)
+  const [recompensasOpen, setRecompensasOpen]      = useState(false)
   const fileRef                                    = useRef<HTMLInputElement>(null)
 
   const form = useForm<EditProfileData>({
@@ -107,16 +114,33 @@ export function ProfilePage() {
 
   const nombre   = profile?.nombre ?? user?.user_metadata?.nombre ?? 'Usuario'
   const initials = nombre.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
-  const nivel    = profile?.nivel ?? 1
   const puntos   = profile?.puntos_totales ?? 0
-  const nextLevel = nivel * 500
-  const pctNivel  = Math.min((puntos / nextLevel) * 100, 100)
+  // Calcula nivel y progreso desde puntos_totales con la curva única en
+  // src/lib/leveling.ts (espejo del SQL nivel_desde_xp). Antes la página
+  // mostraba nivel*500 hardcoded, que no coincidía con el RPC.
+  const prog     = progresoNivel(puntos)
+  const nivel    = prog.nivel
+  const pctNivel = prog.pct * 100
+
+  // Stat "Racha activa" reemplaza la antigua "Puntos" (la XP/nivel ya se
+  // visualiza en la barra del card de arriba). Si la racha activa es 0 y
+  // el récord no, mostramos el récord como referencia.
+  const rachaValor = rachaEfectiva > 0
+    ? `${rachaEfectiva}d`
+    : rachaMasLarga > 0
+      ? `${rachaMasLarga}d`
+      : '0d'
+  const rachaLabel = rachaEfectiva > 0
+    ? 'Racha activa'
+    : rachaMasLarga > 0
+      ? 'Mejor racha'
+      : 'Racha'
 
   const stats = [
-    { label: 'Gastos',  value: expenses.length.toString(),       icon: Wallet,     color: '#4F46E5' },
-    { label: 'Metas',   value: goalsCompletadas.length.toString(), icon: Target,   color: '#10B981' },
-    { label: 'Retos',   value: completados.length.toString(),    icon: Trophy,     color: '#F59E0B' },
-    { label: 'Puntos',  value: puntos.toString(),                icon: TrendingUp, color: '#8B5CF6' },
+    { label: 'Gastos',    value: expenses.length.toString(),         icon: Wallet,     color: '#4F46E5' },
+    { label: 'Metas',     value: goalsCompletadas.length.toString(), icon: Target,     color: '#10B981' },
+    { label: 'Retos',     value: completados.length.toString(),      icon: Trophy,     color: '#F59E0B' },
+    { label: rachaLabel,  value: rachaValor,                         icon: Flame,      color: '#EF4444' },
   ]
 
   const settingsItems = [
@@ -172,6 +196,7 @@ export function ProfilePage() {
                 </motion.div>
                 <motion.button
                   onClick={() => fileRef.current?.click()}
+                  aria-label="Cambiar foto de perfil"
                   whileHover={{ scale: 1.18 }}
                   whileTap={{ scale: 0.88 }}
                   transition={{ type: 'spring', stiffness: 420, damping: 15 }}
@@ -211,8 +236,8 @@ export function ProfilePage() {
             {/* Level progress */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs" style={{ color: 'var(--luka-text-secondary)' }}>
-                <span>{puntos} puntos</span>
-                <span>{nextLevel} para nivel {nivel + 1}</span>
+                <span>{prog.xpEnNivel} / {prog.xpParaSiguiente} XP</span>
+                <span>{prog.xpRestante} para nivel {nivel + 1}</span>
               </div>
               <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                 <motion.div
@@ -249,6 +274,53 @@ export function ProfilePage() {
             </Card>
           </motion.div>
         ))}
+      </motion.div>
+
+      {/* Recompensas (colapsable) */}
+      <motion.div variants={fadeUp}>
+        <Card className="p-5 rounded-2xl shadow-md">
+          <button
+            type="button"
+            onClick={() => setRecompensasOpen((o) => !o)}
+            className="w-full flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5" style={{ color: 'var(--luka-purple)' }} />
+              <h3 className="font-semibold" style={{ color: 'var(--luka-text-primary)' }}>
+                Recompensas {recompensas.length > 0 && (
+                  <span className="text-sm font-normal" style={{ color: 'var(--luka-text-secondary)' }}>
+                    ({desbloqueadasCount} de {recompensas.length})
+                  </span>
+                )}
+              </h3>
+            </div>
+            <motion.div
+              animate={{ rotate: recompensasOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="w-5 h-5" style={{ color: 'var(--luka-text-secondary)' }} />
+            </motion.div>
+          </button>
+
+          {recompensas.length === 0 ? (
+            <p className="mt-3 text-xs text-center" style={{ color: 'var(--luka-text-secondary)' }}>
+              Aún no hay recompensas configuradas
+            </p>
+          ) : (
+            recompensasOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.22 }}
+                className="mt-4 grid grid-cols-3 gap-3"
+              >
+                {recompensas.map((item) => (
+                  <RecompensaItem key={item.achievement.id} item={item} />
+                ))}
+              </motion.div>
+            )
+          )}
+        </Card>
       </motion.div>
 
       {/* Configuración */}
@@ -291,7 +363,7 @@ export function ProfilePage() {
               style={{ WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-5 h-5 flex items-center justify-center">🌙</div>
+                <div className="w-5 h-5 flex items-center justify-center" aria-hidden="true">🌙</div>
                 <span style={{ color: 'var(--luka-text-primary)' }}>Modo oscuro</span>
               </div>
               <Switch

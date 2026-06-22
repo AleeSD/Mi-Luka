@@ -13,6 +13,11 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { useGoals } from '@/hooks/useGoals'
+import { useSaldo } from '@/hooks/useSaldo'
+import { useLukaNotification } from '@/hooks/useLukaNotification'
+import { useSaldoEditor } from '@/context/SaldoEditorContext'
+import { SaldoInsuficienteError } from '@/lib/db/balance'
+import { mensajeBloqueoDinamico } from '@/lib/mensajes'
 import { goalSchema, contribucionSchema } from '@/lib/validations/goal'
 import type { GoalFormData, ContribucionFormData } from '@/lib/validations/goal'
 import { formatCurrency, getDiasRestantes } from '@/lib/utils'
@@ -33,6 +38,9 @@ const goalCardVariants = isMobile
 
 export function GoalsPage() {
   const { goalsActivas, goalsCompletadas, loading, addGoal, contribuir, removeGoal } = useGoals()
+  const { saldoDisponible } = useSaldo()
+  const { notify } = useLukaNotification()
+  const { open: openSaldoEditor } = useSaldoEditor()
   const [showNueva, setShowNueva]           = useState(false)
   const [goalContribuir, setGoalContribuir] = useState<Goal | null>(null)
   const [showCompletadas, setShowCompletadas] = useState(false)
@@ -70,7 +78,18 @@ export function GoalsPage() {
       setGoalContribuir(null)
       contribForm.reset()
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Error al contribuir')
+      if (e instanceof SaldoInsuficienteError) {
+        const msg = mensajeBloqueoDinamico(saldoDisponible, data.monto)
+        notify({
+          variant: 'bloqueo',
+          title: msg.title,
+          subtitle: msg.subtitle,
+          cta: { label: 'Actualizar saldo', onClick: openSaldoEditor },
+        })
+      } else {
+        console.error('[GoalsPage] contribuir error:', e)
+        toast.error(e instanceof Error ? e.message : 'Error al contribuir')
+      }
     }
   })
 
@@ -92,6 +111,7 @@ export function GoalsPage() {
         </div>
         <motion.button
           onClick={() => setShowNueva(true)}
+          aria-label="Nueva meta"
           whileHover={{ scale: 1.1, rotate: 90 }}
           whileTap={{ scale: 0.9 }}
           transition={{ type: 'spring', stiffness: 400, damping: 15 }}
@@ -123,8 +143,8 @@ export function GoalsPage() {
                     <p className="text-2xl font-bold">{totalActivos}</p>
                     <p className="text-xs text-white/70">Metas activas</p>
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold">{formatCurrency(totalAhorrado)}</p>
+                  <div className="min-w-0">
+                    <p className="text-2xl font-bold break-all">{formatCurrency(totalAhorrado)}</p>
                     <p className="text-xs text-white/70">Total ahorrado</p>
                   </div>
                 </div>
@@ -197,21 +217,22 @@ export function GoalsPage() {
                     </motion.div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate" style={{ color: 'var(--luka-text-primary)' }}>{goal.titulo}</h3>
-                      <div className="flex items-center gap-2 text-sm mt-0.5" style={{ color: 'var(--luka-text-secondary)' }}>
+                      <div className="flex items-center gap-1.5 text-sm mt-0.5 min-w-0 flex-wrap" style={{ color: 'var(--luka-text-secondary)' }}>
                         {dias !== null && (
-                          <span className="flex items-center gap-1">
+                          <span className="flex items-center gap-1 shrink-0">
                             <Calendar className="w-3.5 h-3.5" />
                             {dias > 0 ? `${dias} días` : 'Vencida'}
                           </span>
                         )}
                         {dias !== null && <span>·</span>}
-                        <span>Faltan {formatCurrency(faltan)}</span>
+                        <span className="truncate">Faltan {formatCurrency(faltan)}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-lg font-bold" style={{ color: goal.color }}>{pct.toFixed(0)}%</span>
                       <motion.button
                         onClick={() => removeGoal(goal.id).then(() => toast.success('Meta eliminada')).catch((e) => toast.error(e.message))}
+                        aria-label="Eliminar meta"
                         whileHover={{ scale: 1.15 }}
                         whileTap={{ scale: 0.85 }}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-red-400 transition-colors"
@@ -334,6 +355,7 @@ export function GoalsPage() {
                     key={c}
                     type="button"
                     onClick={() => goalForm.setValue('color', c)}
+                    aria-label={`Color ${c}`}
                     whileHover={{ scale: 1.2 }}
                     whileTap={{ scale: 0.9 }}
                     animate={{ scale: goalForm.watch('color') === c ? 1.25 : 1 }}

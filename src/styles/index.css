@@ -172,6 +172,14 @@
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
 }
 
+/* LukaNotification: floats above bottom-nav on mobile, near bottom on desktop */
+.luka-notification-bottom {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 5.25rem);
+}
+@media (min-width: 1024px) {
+  .luka-notification-bottom { bottom: 1.5rem; }
+}
+
 /* ── Luka Motion Utilities ──────────────────────────────────── */
 @keyframes luka-float {
   0%, 100% { transform: translateY(0px); }

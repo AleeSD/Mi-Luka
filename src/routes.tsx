@@ -18,7 +18,7 @@ function PageLoader() {
     <div className="min-h-screen flex items-center justify-center">
       <div
         className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
-        style={{ borderColor: '#4F46E5', borderTopColor: 'transparent' }}
+        style={{ borderColor: 'var(--luka-blue)', borderTopColor: 'transparent' }}
       />
     </div>
   )

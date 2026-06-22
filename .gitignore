@@ -34,6 +34,9 @@ yarn-error.log*
 
 # Testing
 coverage/
+playwright-report/
+test-results/
+.env.test
 
 # Claude Code / AI tools
 .claude/

@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase'
-import type { Goal } from '@/types/database'
+import type { Goal, ContribuirMetaResult } from '@/types/database'
 import type { GoalFormData } from '@/lib/validations/goal'
+import { sanitizeText } from '@/lib/utils'
+import { contribuirMeta as contribuirMetaRpc, eliminarMeta } from '@/lib/db/balance'
 
 export async function getGoals(userId: string): Promise<Goal[]> {
   const { data, error } = await supabase
@@ -9,46 +11,48 @@ export async function getGoals(userId: string): Promise<Goal[]> {
     .eq('user_id', userId)
     .order('created_at', { ascending: false })
 
-  if (error) throw new Error('No se pudieron cargar las metas')
+  if (error) {
+    console.error('[goals.getGoals] error:', error)
+    throw new Error('No se pudieron cargar las metas')
+  }
   return data ?? []
 }
 
 export async function createGoal(userId: string, formData: GoalFormData): Promise<Goal> {
+  // Sanitiza el título antes de persistir (cierra el hueco identificado en B4).
+  const tituloLimpio = sanitizeText(formData.titulo).normalize('NFC')
+
   const { data, error } = await supabase
     .from('goals')
     .insert({
-      user_id: userId,
-      titulo: formData.titulo,
+      user_id:        userId,
+      titulo:         tituloLimpio,
       monto_objetivo: formData.monto_objetivo,
-      monto_actual: 0,
-      fecha_limite: formData.fecha_limite ?? null,
-      color: formData.color,
-      icono: formData.icono,
-      completada: false,
+      monto_actual:   0,
+      fecha_limite:   formData.fecha_limite ?? null,
+      color:          formData.color,
+      icono:          formData.icono,
+      completada:     false,
     })
     .select()
     .single()
 
-  if (error) throw new Error('No se pudo crear la meta')
+  if (error) {
+    console.error('[goals.createGoal] error:', error)
+    throw new Error('No se pudo crear la meta')
+  }
   return data
 }
 
-export async function contribuirMeta(id: string, montoActual: number, monto: number, montoObjetivo: number): Promise<Goal> {
-  const nuevoMonto = Math.min(montoActual + monto, montoObjetivo)
-  const completada = nuevoMonto >= montoObjetivo
-
-  const { data, error } = await supabase
-    .from('goals')
-    .update({ monto_actual: nuevoMonto, completada, updated_at: new Date().toISOString() })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) throw new Error('No se pudo actualizar la meta')
-  return data
+// contribuir_meta: el RPC también dispara aplicar_racha y devuelve la
+// racha_actual nueva. Propagamos el resultado completo para que el hook
+// actualice perfil (saldo + racha) en una sola pasada.
+export async function contribuirMeta(goalId: string, monto: number): Promise<ContribuirMetaResult> {
+  return await contribuirMetaRpc(goalId, monto)
 }
 
-export async function deleteGoal(id: string): Promise<void> {
-  const { error } = await supabase.from('goals').delete().eq('id', id)
-  if (error) throw new Error('No se pudo eliminar la meta')
+// eliminar_meta con devolverSaldo=true (decisión §2.A del plan).
+// Devuelve el saldo nuevo para que el hook lo aplique al perfil.
+export async function deleteGoal(goalId: string): Promise<number> {
+  return await eliminarMeta(goalId, true)
 }

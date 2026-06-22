@@ -2,6 +2,10 @@ import { Outlet, useNavigate, useLocation } from 'react-router'
 import { Home, PlusCircle, TrendingUp, Target, User, Gift } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import logoNormal from '@/assets/logo.png'
+import { LukaNotificationHost } from '@/components/notifications/LukaNotificationHost'
+import { SaldoEditorDialog } from '@/components/saldo/SaldoEditorDialog'
+import { useSaldoNotificationWatcher } from '@/hooks/useSaldoNotificationWatcher'
+import { useRachaNotificationWatcher } from '@/hooks/useRachaNotificationWatcher'
 
 const navItems = [
   { path: '/app',             icon: Home,       label: 'Inicio'   },
@@ -15,6 +19,12 @@ const navItems = [
 export function MainLayout() {
   const navigate  = useNavigate()
   const location  = useLocation()
+
+  // Mira cruces del saldo (Banco B → 0, Banco C → ≤ umbral). Se monta una
+  // sola vez aquí — sobrevive a la navegación entre páginas de /app/*.
+  useSaldoNotificationWatcher()
+  // Mira cruces de hito de racha (10/25/50/100/200/365 días).
+  useRachaNotificationWatcher()
 
   const isActive = (path: string) => {
     if (path === '/app') return location.pathname === '/app'
@@ -197,6 +207,13 @@ export function MainLayout() {
         </div>
       </div>
     </nav>
+
+    {/* Notificación inferior estilo iOS (z-[60], sobre el bottom-nav) */}
+    <LukaNotificationHost />
+
+    {/* Diálogo global de "Actualizar saldo" — abierto desde SaldoCard
+        del Dashboard o desde el CTA de una LukaNotification de bloqueo */}
+    <SaldoEditorDialog />
     </>
   )
 }

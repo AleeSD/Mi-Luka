@@ -1,17 +1,30 @@
-﻿import { useNavigate } from 'react-router'
-import { PlusCircle, Target, Sparkles, TrendingDown, TrendingUp, RefreshCw, Trophy, Gift } from 'lucide-react'
+﻿import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router'
+import { PlusCircle, Target, Sparkles, TrendingDown, TrendingUp, RefreshCw, Trophy, Gift, Pencil, PiggyBank, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import { motion } from 'motion/react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 import { supportsHover, isMobile, fadeUp, scaleIn } from '@/lib/motion-utils'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Progress } from '@/components/ui/progress'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { CategoryIcon } from '@/components/shared/CategoryIcon'
 import { useAuthContext } from '@/context/AuthContext'
 import { useProfile } from '@/hooks/useProfile'
 import { useExpenses } from '@/hooks/useExpenses'
 import { useGoals } from '@/hooks/useGoals'
+import { useSaldo } from '@/hooks/useSaldo'
+import { useGuardadito } from '@/hooks/useGuardadito'
+import { useSaldoEditor } from '@/context/SaldoEditorContext'
+import { SaldoInsuficienteError, GuardaditoInsuficienteError } from '@/lib/db/balance'
+import { ahorroLibreSchema, sacarGuardaditoSchema } from '@/lib/validations/balance'
+import type { AhorroLibreFormData, SacarGuardaditoFormData } from '@/lib/validations/balance'
 import { CATEGORIAS, formatCurrency, formatDate } from '@/lib/utils'
 import type { CategoriaGasto } from '@/types/database'
 
@@ -48,19 +61,69 @@ export function DashboardPage() {
   const { profile, loading: profileLoading } = useProfile()
   const { expenses, loading: expensesLoading, totalMes, refresh } = useExpenses()
   const { goalsActivas, loading: goalsLoading } = useGoals()
+  const { saldoDisponible, loading: saldoLoading } = useSaldo()
+  const { montoGuardadito, saldoDisponible: saldoParaGuardadito, registrarAhorro, sacar, loading: guardaditoLoading } = useGuardadito()
+  const { open: openSaldoEditor } = useSaldoEditor()
+
+  // GuardaditoCard dialog state (el diálogo de edición de saldo es global ahora)
+  const [showApartar, setShowApartar]           = useState(false)
+  const [showSacar, setShowSacar]               = useState(false)
+
+  const apartarForm = useForm<AhorroLibreFormData>({
+    resolver: zodResolver(ahorroLibreSchema),
+    defaultValues: { monto: undefined },
+  })
+  const sacarForm = useForm<SacarGuardaditoFormData>({
+    resolver: zodResolver(sacarGuardaditoSchema),
+    defaultValues: { monto: undefined },
+  })
+
+  const onApartar = apartarForm.handleSubmit(async (data) => {
+    try {
+      await registrarAhorro(data.monto)
+      toast.success(`${formatCurrency(data.monto)} apartado en tu Guardadito`)
+      setShowApartar(false)
+      apartarForm.reset()
+    } catch (e) {
+      if (e instanceof SaldoInsuficienteError) {
+        toast.error(`Tu saldo (${formatCurrency(saldoParaGuardadito)}) no alcanza para apartar ${formatCurrency(data.monto)}.`)
+      } else {
+        console.error('[DashboardPage] registrar_ahorro_libre', e)
+        toast.error('No se pudo apartar el monto')
+      }
+    }
+  })
+
+  const onSacar = sacarForm.handleSubmit(async (data) => {
+    try {
+      await sacar(data.monto)
+      toast.success(`${formatCurrency(data.monto)} devuelto a tu saldo`)
+      setShowSacar(false)
+      sacarForm.reset()
+    } catch (e) {
+      if (e instanceof GuardaditoInsuficienteError) {
+        toast.error(`Tu Guardadito (${formatCurrency(montoGuardadito)}) no tiene ese monto.`)
+      } else {
+        console.error('[DashboardPage] sacar_de_guardadito', e)
+        toast.error('No se pudo sacar el monto')
+      }
+    }
+  })
 
   const loading = profileLoading || expensesLoading
 
   const nombre        = profile?.nombre ?? user?.user_metadata?.nombre ?? 'Usuario'
   const recentExpenses = expenses.slice(0, 5)
 
-  const hoy = new Date()
-  const gastosMes = expenses.filter((e) => {
-    const f = new Date(e.fecha)
-    return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear()
-  })
+  const gastosMes = useMemo(() => {
+    const hoy = new Date()
+    return expenses.filter((e) => {
+      const f = new Date(e.fecha)
+      return f.getMonth() === hoy.getMonth() && f.getFullYear() === hoy.getFullYear()
+    })
+  }, [expenses])
 
-  const porCategoria = Object.entries(
+  const porCategoria = useMemo(() => Object.entries(
     gastosMes.reduce<Record<string, number>>((acc, e) => {
       acc[e.categoria] = (acc[e.categoria] ?? 0) + Number(e.monto)
       return acc
@@ -69,9 +132,12 @@ export function DashboardPage() {
     name:  CATEGORIAS[cat as CategoriaGasto]?.label ?? cat,
     value,
     color: CATEGORIAS[cat as CategoriaGasto]?.color ?? '#6B7280',
-  }))
+  })), [gastosMes])
 
-  const totalAhorrado = goalsActivas.reduce((acc, g) => acc + Number(g.monto_actual), 0)
+  const totalAhorrado = useMemo(
+    () => goalsActivas.reduce((acc, g) => acc + Number(g.monto_actual), 0),
+    [goalsActivas],
+  )
 
   return (
     <motion.div
@@ -96,6 +162,7 @@ export function DashboardPage() {
         </div>
         <motion.button
           onClick={refresh}
+          aria-label="Actualizar"
           whileHover={{ rotate: 180 }}
           whileTap={{ scale: 0.85 }}
           transition={{ duration: 0.4, ease: 'easeInOut' }}
@@ -120,7 +187,7 @@ export function DashboardPage() {
             >
               <div className="relative z-10">
                 <p className="text-white/80 text-sm mb-1">Gastos del mes</p>
-                <h2 className="text-4xl lg:text-5xl text-white font-bold mb-4">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl text-white font-bold mb-4 break-all">
                   {formatCurrency(totalMes)}
                 </h2>
                 <div className="flex gap-3">
@@ -128,18 +195,93 @@ export function DashboardPage() {
                     <p className="text-white/80 text-xs flex items-center gap-1">
                       <TrendingDown className="w-3 h-3" /> Gastos
                     </p>
-                    <p className="text-white text-lg font-semibold">{formatCurrency(totalMes)}</p>
+                    <p className="text-white text-base font-semibold break-all">{formatCurrency(totalMes)}</p>
                   </div>
                   <div className="flex-1 bg-white/20 rounded-xl p-3">
                     <p className="text-white/80 text-xs flex items-center gap-1">
                       <TrendingUp className="w-3 h-3" /> Ahorrado
                     </p>
-                    <p className="text-white text-lg font-semibold">{formatCurrency(totalAhorrado)}</p>
+                    <p className="text-white text-base font-semibold break-all">{formatCurrency(totalAhorrado)}</p>
                   </div>
                 </div>
               </div>
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16" />
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full -ml-12 -mb-12" />
+            </Card>
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* Saldo + Guardadito row */}
+      <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
+        {/* SaldoCard */}
+        {saldoLoading ? (
+          <Skeleton className="h-28 rounded-2xl" />
+        ) : (
+          <motion.div
+            whileHover={{ scale: 1.02, y: -2 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card className="p-4 rounded-2xl shadow-md h-full relative">
+              <div className="flex items-start justify-between mb-1">
+                <p className="text-xs font-medium" style={{ color: 'var(--luka-text-secondary)' }}>Mi saldo</p>
+                <motion.button
+                  type="button"
+                  onClick={openSaldoEditor}
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.88 }}
+                  className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  aria-label="Editar saldo"
+                >
+                  <Pencil className="w-3.5 h-3.5" style={{ color: 'var(--luka-blue)' }} />
+                </motion.button>
+              </div>
+              <p className="text-xl font-bold mb-0.5 break-all" style={{ color: 'var(--luka-text-primary)' }}>
+                {formatCurrency(saldoDisponible)}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--luka-text-secondary)' }}>disponible</p>
+            </Card>
+          </motion.div>
+        )}
+
+        {/* GuardaditoCard */}
+        {guardaditoLoading ? (
+          <Skeleton className="h-28 rounded-2xl" />
+        ) : (
+          <motion.div
+            whileHover={{ scale: 1.02, y: -2 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Card className="p-4 rounded-2xl shadow-md h-full" style={{ borderColor: '#10B98130', background: 'rgba(16,185,129,0.04)' }}>
+              <div className="flex items-center gap-1.5 mb-1">
+                <PiggyBank className="w-3.5 h-3.5" style={{ color: '#10B981' }} />
+                <p className="text-xs font-medium" style={{ color: 'var(--luka-text-secondary)' }}>Guardadito</p>
+              </div>
+              <p className="text-xl font-bold mb-2 break-all" style={{ color: '#10B981' }}>
+                {formatCurrency(montoGuardadito)}
+              </p>
+              <div className="flex gap-1.5">
+                <motion.button
+                  type="button"
+                  onClick={() => { apartarForm.reset(); setShowApartar(true) }}
+                  whileTap={{ scale: 0.93 }}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-white text-xs font-medium"
+                  style={{ background: '#10B981' }}
+                >
+                  <ArrowDownCircle className="w-3.5 h-3.5" />
+                  Apartar
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={() => { sacarForm.reset(); setShowSacar(true) }}
+                  whileTap={{ scale: 0.93 }}
+                  className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-medium border"
+                  style={{ color: '#10B981', borderColor: '#10B98150' }}
+                >
+                  <ArrowUpCircle className="w-3.5 h-3.5" />
+                  Sacar
+                </motion.button>
+              </div>
             </Card>
           </motion.div>
         )}
@@ -376,6 +518,87 @@ export function DashboardPage() {
           </Card>
         </motion.div>
       </motion.div>
+
+      {/* Apartar (registrar_ahorro_libre) dialog */}
+      <Dialog open={showApartar} onOpenChange={setShowApartar}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Apartar al Guardadito</DialogTitle>
+          </DialogHeader>
+          <div className="mt-1 mb-1 p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
+            <p className="text-sm text-center" style={{ color: 'var(--luka-text-secondary)' }}>
+              Saldo disponible: <span className="font-semibold" style={{ color: 'var(--luka-text-primary)' }}>{formatCurrency(saldoParaGuardadito)}</span>
+            </p>
+          </div>
+          <form onSubmit={onApartar} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="apartar-monto">Monto a apartar (S/)</Label>
+              <Input
+                id="apartar-monto"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                className="rounded-xl"
+                {...apartarForm.register('monto', { valueAsNumber: true })}
+              />
+              {apartarForm.formState.errors.monto && (
+                <p className="text-xs text-red-500">{apartarForm.formState.errors.monto.message}</p>
+              )}
+            </div>
+            <motion.button
+              type="submit"
+              disabled={apartarForm.formState.isSubmitting}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+              style={{ background: '#10B981' }}
+            >
+              {apartarForm.formState.isSubmitting ? 'Apartando...' : 'Apartar'}
+            </motion.button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sacar del Guardadito dialog */}
+      <Dialog open={showSacar} onOpenChange={setShowSacar}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Sacar del Guardadito</DialogTitle>
+          </DialogHeader>
+          <div className="mt-1 mb-1 p-3 rounded-xl bg-gray-50 dark:bg-gray-800">
+            <p className="text-sm text-center" style={{ color: 'var(--luka-text-secondary)' }}>
+              Guardadito: <span className="font-semibold" style={{ color: '#10B981' }}>{formatCurrency(montoGuardadito)}</span>
+            </p>
+          </div>
+          <form onSubmit={onSacar} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="sacar-monto">Monto a sacar (S/)</Label>
+              <Input
+                id="sacar-monto"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                className="rounded-xl"
+                {...sacarForm.register('monto', { valueAsNumber: true })}
+              />
+              {sacarForm.formState.errors.monto && (
+                <p className="text-xs text-red-500">{sacarForm.formState.errors.monto.message}</p>
+              )}
+            </div>
+            <motion.button
+              type="submit"
+              disabled={sacarForm.formState.isSubmitting}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.97 }}
+              className="w-full py-3 rounded-xl text-white font-medium disabled:opacity-50"
+              style={{ background: '#10B981' }}
+            >
+              {sacarForm.formState.isSubmitting ? 'Sacando...' : 'Sacar al saldo'}
+            </motion.button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
     </motion.div>
   )
 }
